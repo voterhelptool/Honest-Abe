@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Honest Abe",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "A free, open truth agent. Free. Fair. Firm. Fun. True. Transparent. Accessible.",
+    "description": "Description of the extension"
+  },
+  "analyzeSelection": {
+    "message": "Analyze with Honest Abe",
+    "description": "Context menu item"
+  }
+}
