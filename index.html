@@ -453,6 +453,14 @@
   }
   .neutral-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:5px; }
 
+  /* ── Moral / Ethical Assessment ── */
+  .moral-block {
+    background:rgba(201,150,42,.08); border-left:3px solid rgba(201,150,42,.6);
+    padding:10px 12px; border-radius:0 5px 5px 0; margin-bottom:14px;
+  }
+  .moral-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:5px; }
+  #moralText { font-size:13px; line-height:1.6; }
+
   /* ── Manipulation Detection ── */
   .manip-block { margin-bottom:14px; }
   .manip-header { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
@@ -646,6 +654,12 @@
       <div id="neutralText"></div>
     </div>
 
+    <!-- Moral / Ethical Assessment -->
+    <div id="moralBlock" class="moral-block" style="display:none">
+      <div class="moral-label">⚖ Abe's Assessment</div>
+      <div id="moralText"></div>
+    </div>
+
     <!-- Manipulation Detection -->
     <div id="manipBlock" class="manip-block" style="display:none">
       <div class="manip-header">
@@ -805,10 +819,12 @@ function pct(s) {
 function verdictClass(v) {
     if (!v) return "unknown";
     const u = v.toUpperCase();
-    if (u === "TRUE")                return "pass";
-    if (u === "MOSTLY TRUE")         return "pass";
-    if (u === "MISLEADING")          return "warn";
-    if (u === "MOSTLY FALSE")        return "fail";
+    if (u === "TRUE")                          return "pass";
+    if (u === "MOSTLY TRUE")                   return "pass";
+    if (u === "MISLEADING")                    return "warn";
+    if (u === "MOSTLY FALSE")                  return "fail";
+    if (u === "FACTUALLY TRUE / MORALLY DISPUTED") return "warn";
+    if (u === "REFUSED")                       return "unknown";
     if (u === "FALSE")               return "fail";
     if (u === "OPINION")             return "warn";
     if (u === "UNVERIFIABLE")        return "unknown";
@@ -833,6 +849,10 @@ function renderResult(result) {
     $("verdictBox").className     = `verdict-box ${cls}`;
     $("verdictLabel").textContent = result.verdict || "UNVERIFIABLE";
     $("verdictSummary").textContent = result.plainSummary || result.summary || "";
+
+    // REFUSED — hide credibility index, meaningless for non-claims
+    const isRefused = result.verdict === "REFUSED";
+    $("credibility-index").style.display = isRefused ? "none" : "block";
 
     // ── CONFIDENCE LABEL ──
     const cl = (result.confidenceLabel || "").toUpperCase();
@@ -862,6 +882,16 @@ function renderResult(result) {
         neutralEl.style.display = "block";
     } else {
         neutralEl.style.display = "none";
+    }
+
+    // ── MORAL LAYER ──
+    const moral = result.moralLayer;
+    const moralEl = $("moralBlock");
+    if (moral && moralEl) {
+        $("moralText").textContent = moral;
+        moralEl.style.display = "block";
+    } else if (moralEl) {
+        moralEl.style.display = "none";
     }
 
     // ── MANIPULATION DETECTION ──
@@ -979,8 +1009,10 @@ function resetCredibilityIndex() {
     if (fill) fill.style.height = "0%";
     document.querySelectorAll(".ci-dim-bar").forEach(b => b.style.width = "0%");
     $("ci-score-pct").textContent = "—";
+    $("credibility-index").style.display = "block";
     $("neutralBlock").style.display = "none";
     $("manipBlock").style.display = "none";
+    if ($("moralBlock")) $("moralBlock").style.display = "none";
 }
 
 // ── Civic context (from ?rep= URL param — MN Civic Profile handoff) ──────
