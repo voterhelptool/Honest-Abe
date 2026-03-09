@@ -144,9 +144,11 @@ Respond ONLY with valid JSON — no text before or after:
     "remedyImplied": "Is a specific remedy being presented as the only option? null if none."
   },
   "prebunkLesson": {
-    "technique": "Name of the manipulation technique detected, or null if none.",
-    "explanation": "One sentence: how this technique works to bypass critical thinking.",
-    "watchFor": "One sentence: what to look for next time you encounter this technique."
+    "technique": "Name of the manipulation technique, or null. Choose from: Emotional Manipulation, Appeal to Fear, False Consensus, Bandwagon, Scapegoating, Whataboutism, Conspiracy Framing, Moving the Goalposts, False Dichotomy, Loaded Language, False Authority. Use null if none apply.",
+    "category": "Category: Emotional | Social Proof | Attribution | Unfalsifiable | Framing | Authority. null if none.",
+    "explanation": "One sentence: how this specific technique works to bypass critical thinking.",
+    "watchFor": "One sentence: what to look for next time.",
+    "askYourself": "One specific question the reader should ask themselves when they encounter this."
   },
   "incentiveBias": "Who benefits if believed? null if none.",
   "gapReason": "If unverifiable, which applies: PRIMARY_SOURCE_MISSING | TOO_VAGUE | TIME_SENSITIVE | OPINION_AS_FACT | UNFALSIFIABLE_BY_DESIGN | CONTESTED_EVIDENCE. null if not applicable.",
