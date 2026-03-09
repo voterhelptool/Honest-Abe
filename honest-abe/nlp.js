@@ -18,14 +18,9 @@
 // ── PROVIDER REGISTRY ─────────────────────────────────────────────────────
 function getProviders() {
     return [
-        window._HonestAbeAdapter_OpenRouter,
-        window._HonestAbeAdapter_OllamaFree,
-        window._HonestAbeAdapter_Mlvoca,
-        window._HonestAbeAdapter_HuggingFace,
-        window._HonestAbeAdapter_Mistral,
-        window._HonestAbeAdapter_WebLLM,
-        window._HonestAbeAdapter_Puter,
-        window._HonestAbeAdapter_Pattern,
+        window._HonestAbeAdapter_Puter,        // Free Claude — no key needed, just slow
+        window._HonestAbeAdapter_OpenRouter,   // Free models — needs account
+        window._HonestAbeAdapter_Pattern,      // Bedrock — always works
     ].filter(Boolean);
 }
 
@@ -266,7 +261,7 @@ class NLPEngine {
                 if (!avail) { this._log(adapter.name, "UNAVAILABLE"); continue; }
 
                 this._log(adapter.name, "ATTEMPTING", claim.slice(0, 60));
-                const raw    = await this._timeout(adapter.query(prompt), 14000);
+                const raw    = await this._timeout(adapter.query(prompt), adapter.name === "Puter.js" ? 30000 : 14000);
                 const parsed = this._parse(raw, adapter.name);
 
                 if (!parsed?.verdictLabel) { this._log(adapter.name, "BAD_RESPONSE"); continue; }
