@@ -18,14 +18,14 @@
 // ── PROVIDER REGISTRY ─────────────────────────────────────────────────────
 function getProviders() {
     return [
-        window._HonestAbeAdapter_OpenRouter,   // Free DeepSeek R1, Llama 3, Qwen — no account needed
-        window._HonestAbeAdapter_OllamaFree,   // Zero config, no account
-        window._HonestAbeAdapter_Mlvoca,       // No key, no account
-        window._HonestAbeAdapter_HuggingFace,  // Rate limited free
-        window._HonestAbeAdapter_Mistral,      // Free tier
-        window._HonestAbeAdapter_WebLLM,       // Fully local
-        window._HonestAbeAdapter_Puter,        // Free Claude — requires free Puter account
-        window._HonestAbeAdapter_Pattern,      // Bedrock — always works, no AI needed
+        window._HonestAbeAdapter_OpenRouter,
+        window._HonestAbeAdapter_OllamaFree,
+        window._HonestAbeAdapter_Mlvoca,
+        window._HonestAbeAdapter_HuggingFace,
+        window._HonestAbeAdapter_Mistral,
+        window._HonestAbeAdapter_WebLLM,
+        window._HonestAbeAdapter_Puter,
+        window._HonestAbeAdapter_Pattern,
     ].filter(Boolean);
 }
 
@@ -37,7 +37,6 @@ const CLAIM_TYPES = {
 };
 
 // ── SOURCE LIBRARY ────────────────────────────────────────────────────────
-// Labeled honestly. We don't pretend everything is neutral.
 const SOURCES = {
     factcheck:  { name: "FactCheck.org",           url: "https://www.factcheck.org",             lean: "Center" },
     politifact: { name: "PolitiFact",              url: "https://www.politifact.com",            lean: "Center-Left" },
@@ -67,18 +66,20 @@ const SOURCES = {
     ballotpedia:{ name: "Ballotpedia",              url: "https://ballotpedia.org",               lean: "Center" },
     allsides:   { name: "AllSides",                 url: "https://www.allsides.com",              lean: "Center" },
     mbfc:       { name: "Media Bias/Fact Check",    url: "https://mediabiasfactcheck.com",        lean: "Center" },
+    nasa:       { name: "NASA",                     url: "https://www.nasa.gov",                  lean: "Government" },
 };
 
 function getSourcesForClaim(claimType, keywords = []) {
     const kw = keywords.join(" ").toLowerCase();
 
-    if (/vaccine|covid|virus|disease|health|medical/.test(kw))   return [SOURCES.cdc,        SOURCES.nih,        SOURCES.pubmed];
+    if (/vaccine|covid|virus|disease|health|medical/.test(kw))     return [SOURCES.cdc,        SOURCES.nih,        SOURCES.pubmed];
     if (/election|vote|ballot|candidate|congress|senate/.test(kw)) return [SOURCES.ballotpedia, SOURCES.factcheck,  SOURCES.ap];
-    if (/economy|inflation|jobs|unemployment|gdp|wage/.test(kw))  return [SOURCES.fred,       SOURCES.bls,        SOURCES.reuters];
-    if (/climate|environment|carbon|emission/.test(kw))           return [SOURCES.pubmed,     SOURCES.ourworld,   SOURCES.ap];
-    if (/crime|police|fbi|arrest|murder/.test(kw))                return [SOURCES.ap,         SOURCES.factcheck,  SOURCES.bbc];
-    if (/immigration|border|migrant|deportation/.test(kw))        return [SOURCES.ap,         SOURCES.factcheck,  SOURCES.examiner];
-    if (/war|military|troops|weapon|nato/.test(kw))               return [SOURCES.reuters,    SOURCES.bbc,        SOURCES.hill];
+    if (/economy|inflation|jobs|unemployment|gdp|wage/.test(kw))   return [SOURCES.fred,        SOURCES.bls,        SOURCES.reuters];
+    if (/climate|environment|carbon|emission/.test(kw))            return [SOURCES.pubmed,      SOURCES.ourworld,   SOURCES.ap];
+    if (/crime|police|fbi|arrest|murder/.test(kw))                 return [SOURCES.ap,          SOURCES.factcheck,  SOURCES.bbc];
+    if (/immigration|border|migrant|deportation/.test(kw))         return [SOURCES.ap,          SOURCES.factcheck,  SOURCES.examiner];
+    if (/war|military|troops|weapon|nato/.test(kw))                return [SOURCES.reuters,     SOURCES.bbc,        SOURCES.hill];
+    if (/space|orbit|planet|mars|moon|nasa|satellite/.test(kw))   return [SOURCES.nasa,        SOURCES.ap,         SOURCES.reuters];
 
     const sets = {
         [CLAIM_TYPES.FACTUAL]:     [SOURCES.ap,         SOURCES.factcheck,  SOURCES.dispatch],
@@ -139,20 +140,20 @@ Respond ONLY with valid JSON — no text before or after:
   "framingFlags": ["any manipulation techniques or misleading framing detected"],
   "frameAnalysis": {
     "problemDefined": "What problem is this claim defining or constructing? null if none.",
-    "blameAssigned": "Who or what is being blamed, and is a causal mechanism provided? null if none.",
-    "moralJudgment": "Is a moral verdict being presented as observable fact? Quote the specific language. null if none.",
-    "remedyImplied": "Is a specific remedy being presented as the only option? null if none."
+    "blameAssigned": "Who or what is being blamed? null if none.",
+    "moralJudgment": "Is a moral verdict presented as fact? null if none.",
+    "remedyImplied": "Is a remedy presented as the only option? null if none."
   },
   "prebunkLesson": {
-    "technique": "Name of the manipulation technique, or null. Choose from: Emotional Manipulation, Appeal to Fear, False Consensus, Bandwagon, Scapegoating, Whataboutism, Conspiracy Framing, Moving the Goalposts, False Dichotomy, Loaded Language, False Authority. Use null if none apply.",
-    "category": "Category: Emotional | Social Proof | Attribution | Unfalsifiable | Framing | Authority. null if none.",
-    "explanation": "One sentence: how this specific technique works to bypass critical thinking.",
+    "technique": "Name of manipulation technique or null.",
+    "category": "Emotional | Social Proof | Attribution | Unfalsifiable | Framing | Authority. null if none.",
+    "explanation": "One sentence: how this technique bypasses critical thinking.",
     "watchFor": "One sentence: what to look for next time.",
-    "askYourself": "One specific question the reader should ask themselves when they encounter this."
+    "askYourself": "One specific question the reader should ask."
   },
   "incentiveBias": "Who benefits if believed? null if none.",
-  "gapReason": "If unverifiable, which applies: PRIMARY_SOURCE_MISSING | TOO_VAGUE | TIME_SENSITIVE | OPINION_AS_FACT | UNFALSIFIABLE_BY_DESIGN | CONTESTED_EVIDENCE. null if not applicable.",
-  "pathForward": "Specific actionable step: what exactly to look up, where, and what to look for. Not generic.",
+  "gapReason": "PRIMARY_SOURCE_MISSING | TOO_VAGUE | TIME_SENSITIVE | OPINION_AS_FACT | UNFALSIFIABLE_BY_DESIGN | CONTESTED_EVIDENCE | null",
+  "pathForward": "Specific actionable step — name a source, database, or record type.",
   "claimDNA": {
     "verifiablePieces": ["parts that CAN be fact-checked"],
     "unverifiablePieces": ["parts that CANNOT be verified"]
@@ -160,16 +161,11 @@ Respond ONLY with valid JSON — no text before or after:
 }
 
 Rules:
-- verdictLabel MUST be one of the exact strings above. Never leave blank.
-- confidenceLabel: HIGH = strong evidence, MODERATE = consistent pattern, LOW = thin/contested, INFERENCE ONLY = no direct evidence.
-- educatedInference: never refuse to estimate — label it clearly as inference and give your best probabilistic read.
-- frameAnalysis: look for structural manipulation, not just loaded words. A claim can use neutral language and still manipulate through framing.
-- prebunkLesson: if a technique is detected, name it and teach it. This helps the user recognize it next time.
-- gapReason: be specific about WHY something can't be verified, not just that it can't.
-- pathForward: name a specific source, database, or record type. Never say "verify independently."
-- Emotional language that distorts facts = MISLEADING even if partially true.
-- plainSummary must be written for a general audience.
-- reasoning must be specific, not generic boilerplate.`;
+- verdictLabel MUST be one of the exact strings above.
+- If a claim is clearly false (e.g. no teapot orbits Mars), say FALSE with HIGH confidence.
+- plainSummary must be plain English for a general audience.
+- reasoning must be specific, not boilerplate.
+- Never refuse to give a verdict. If uncertain, use UNVERIFIABLE with an educatedInference.`;
 }
 
 // ── PATTERN FALLBACK ──────────────────────────────────────────────────────
@@ -184,12 +180,12 @@ function patternAnalysis(claim, claimType, dna) {
         { p: /\b(everyone knows|obviously|clearly|just|simply)\b/i,   f: "False consensus — not everyone agrees" },
         { p: /\b(some say|many feel|people are saying)\b/i,           f: "Claim dodge — attribution without evidence" },
         { p: /\b(wake up|sheeple|they don't want you to know)\b/i,    f: "Conspiracy framing" },
-        { p: /\b(fake news|mainstream media|lamestream)\b/i,          f: "Media delegitimization — dismissing sources without evidence" },
+        { p: /\b(fake news|mainstream media|lamestream)\b/i,          f: "Media delegitimization" },
         { p: /\b(deep state|globalist|elite agenda|cabal)\b/i,        f: "Conspiracy framing" },
-        { p: /\b(suppress|hide|cover.?up|censored)\b/i,               f: "Suppression framing — extraordinary claim, needs evidence" },
+        { p: /\b(suppress|hide|cover.?up|censored)\b/i,               f: "Suppression framing" },
         { p: /\b(do your own research|dyor)\b/i,                      f: "Anti-expert framing" },
-        { p: /\b(destroy|invasion|war on|radical|threat)\b/i,         f: "Inflammatory language — designed to provoke, not inform" },
-        { p: /\b(100%|proven fact|undeniable|irrefutable)\b/i,        f: "Overcertainty — few things are 100% proven" },
+        { p: /\b(destroy|invasion|war on|radical|threat)\b/i,         f: "Inflammatory language" },
+        { p: /\b(100%|proven fact|undeniable|irrefutable)\b/i,        f: "Overcertainty" },
     ];
 
     patterns.forEach(({ p, f }) => { if (p.test(c)) flags.push(f); });
@@ -201,7 +197,7 @@ function patternAnalysis(claim, claimType, dna) {
 
     let incentiveBias = null;
     if (/\b(buy|purchase|sale|sponsored|advertisement|our product)\b/i.test(c)) {
-        incentiveBias = "Commercial language — source may have financial interest in this claim";
+        incentiveBias = "Commercial language — source may have financial interest";
         verifiable = Math.min(verifiable, 0.3);
     }
 
@@ -212,34 +208,29 @@ function patternAnalysis(claim, claimType, dna) {
 
     const verdict = claimType === CLAIM_TYPES.OPINION ? "OPINION"
         : flags.length >= 3 ? "MISLEADING"
-        : flags.length >= 1 ? "LOW CONFIDENCE"
         : "LOW CONFIDENCE";
 
     const summary = [
         flags.length > 0 ? `This claim contains ${flags.length} warning sign${flags.length > 1 ? "s" : ""}: ${flags.slice(0,2).join("; ")}.` : "",
         claimType === CLAIM_TYPES.OPINION ? "This appears to be an opinion, not a factual claim." : "",
-        claimType === CLAIM_TYPES.STATISTICAL ? "Statistical claims require a cited source — verify the numbers independently." : "",
+        claimType === CLAIM_TYPES.STATISTICAL ? "Statistical claims require a cited source." : "",
         "AI analysis was unavailable. Use the sources below to verify."
     ].filter(Boolean).join(" ");
 
-    const confidence = flags.length > 0 ? 0.55 : 0.35;
-    const confidenceLabel = flags.length >= 3 ? "LOW" : flags.length >= 1 ? "LOW" : "INFERENCE ONLY";
-
     return {
-        verdictLabel: verdict, verifiable, reproducible, contextuallyHonest, falsifiable,
-        confidence,
-        confidenceLabel,
+        verdictLabel: verdict,
+        verifiable, reproducible, contextuallyHonest, falsifiable,
+        confidence: flags.length > 0 ? 0.55 : 0.35,
+        confidenceLabel: flags.length >= 3 ? "LOW" : flags.length >= 1 ? "LOW" : "INFERENCE ONLY",
         plainSummary: summary,
-        reasoning: flags.length > 0 ? `Pattern analysis detected: ${flags.join("; ")}.` : "No obvious manipulation patterns detected. AI unavailable for deeper analysis.",
-        educatedInference: (verdict === "UNVERIFIABLE" || verdict === "LOW CONFIDENCE")
-            ? `Based on language patterns alone: this claim shows ${flags.length} warning sign(s). Without AI analysis, a definitive verdict is not possible, but the presence of ${flags.length > 0 ? "manipulation patterns" : "vague or unattributed language"} is a signal to verify carefully before accepting or sharing.`
-            : null,
+        reasoning: flags.length > 0 ? `Pattern analysis detected: ${flags.join("; ")}.` : "No manipulation patterns detected. AI unavailable for deeper analysis.",
+        educatedInference: `Based on language patterns: ${flags.length} warning sign(s) detected. Verify carefully before accepting or sharing.`,
         framingFlags: flags,
-        frameAnalysis: null,   // populated by AI only
-        prebunkLesson: null,   // populated by AI only — Stage 4 will add offline lessons
+        frameAnalysis: null,
+        prebunkLesson: null,
         incentiveBias,
         gapReason: !dna.checkable ? "TOO_VAGUE" : claimType === CLAIM_TYPES.OPINION ? "OPINION_AS_FACT" : null,
-        pathForward: `Start with the sources listed below. Look for a primary source — an official record, government data, or peer-reviewed study — that directly addresses the specific claim.`,
+        pathForward: "Start with the sources listed below. Look for a primary source — an official record, government data, or peer-reviewed study.",
         claimDNA: {
             verifiablePieces: dna.entities.length > 0 ? dna.entities : ["No specific verifiable entities found"],
             unverifiablePieces: dna.checkable ? [] : ["Claim is too vague to fact-check specifically"]
@@ -252,7 +243,7 @@ function patternAnalysis(claim, claimType, dna) {
 class NLPEngine {
     constructor() {
         this._cache  = new Map();
-        this._log    = [];
+        this._audit  = [];          // ← fixed: was _log, collided with method name
         this._active = null;
     }
 
@@ -294,9 +285,9 @@ class NLPEngine {
             result = patternAnalysis(claim, claimType, dna);
         }
 
-        const sources    = getSourcesForClaim(claimType, dna.keywords);
-        const pillarAvg  = (result.verifiable + result.reproducible + result.contextuallyHonest + result.falsifiable) / 4;
-        const verdict    = claimType === CLAIM_TYPES.OPINION ? "OPINION" : (result.verdictLabel || this._scoreToVerdict(pillarAvg, result.confidence));
+        const sources   = getSourcesForClaim(claimType, dna.keywords);
+        const pillarAvg = (result.verifiable + result.reproducible + result.contextuallyHonest + result.falsifiable) / 4;
+        const verdict   = claimType === CLAIM_TYPES.OPINION ? "OPINION" : (result.verdictLabel || this._scoreToVerdict(pillarAvg, result.confidence));
 
         const final = {
             ...result, verdict, claimType, sources, pillarAverage: pillarAvg,
@@ -328,23 +319,23 @@ class NLPEngine {
             if (match) clean = match[0];
             const p = JSON.parse(clean);
             return {
-                verdictLabel:      p.verdictLabel || null,
-                verifiable:        this._clamp(p.verifiable),
-                reproducible:      this._clamp(p.reproducible),
+                verdictLabel:       p.verdictLabel || null,
+                verifiable:         this._clamp(p.verifiable),
+                reproducible:       this._clamp(p.reproducible),
                 contextuallyHonest: this._clamp(p.contextuallyHonest),
-                falsifiable:       this._clamp(p.falsifiable),
-                confidence:        this._clamp(p.confidence),
-                confidenceLabel:   p.confidenceLabel || null,
-                plainSummary:      p.plainSummary || "",
-                reasoning:         p.reasoning    || "",
-                educatedInference: p.educatedInference || null,
-                framingFlags:      Array.isArray(p.framingFlags) ? p.framingFlags : [],
-                frameAnalysis:     p.frameAnalysis || null,
-                prebunkLesson:     p.prebunkLesson?.technique ? p.prebunkLesson : null,
-                incentiveBias:     p.incentiveBias || null,
-                gapReason:         p.gapReason || null,
-                pathForward:       p.pathForward || null,
-                claimDNA:          p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
+                falsifiable:        this._clamp(p.falsifiable),
+                confidence:         this._clamp(p.confidence),
+                confidenceLabel:    p.confidenceLabel || null,
+                plainSummary:       p.plainSummary || "",
+                reasoning:          p.reasoning    || "",
+                educatedInference:  p.educatedInference || null,
+                framingFlags:       Array.isArray(p.framingFlags) ? p.framingFlags : [],
+                frameAnalysis:      p.frameAnalysis || null,
+                prebunkLesson:      p.prebunkLesson?.technique ? p.prebunkLesson : null,
+                incentiveBias:      p.incentiveBias || null,
+                gapReason:          p.gapReason || null,
+                pathForward:        p.pathForward || null,
+                claimDNA:           p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
                 provider, method: "llm"
             };
         } catch { return null; }
@@ -357,11 +348,11 @@ class NLPEngine {
     }
 
     _log(provider, status, detail) {
-        this._log.push?.({ provider, status, detail, ts: Date.now() });
+        this._audit.push({ provider, status, detail, ts: Date.now() });  // ← fixed
         console.log(`[Honest Abe] ${provider} → ${status}`, detail ?? "");
     }
 
-    audit() { return { log: this._log, activeProvider: this._active, cacheSize: this._cache.size }; }
+    audit() { return { log: this._audit, activeProvider: this._active, cacheSize: this._cache.size }; }
 }
 
 const nlp = new NLPEngine();
