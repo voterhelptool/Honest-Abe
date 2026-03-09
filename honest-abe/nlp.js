@@ -132,10 +132,25 @@ Respond ONLY with valid JSON — no text before or after:
   "contextuallyHonest": 0.0-1.0,
   "falsifiable": 0.0-1.0,
   "confidence": 0.0-1.0,
+  "confidenceLabel": "HIGH" | "MODERATE" | "LOW" | "INFERENCE ONLY",
   "plainSummary": "2-3 sentences plain English. Be direct. If it's false, say it's false.",
   "reasoning": "Specific explanation of WHY this verdict. What evidence exists or doesn't?",
+  "educatedInference": "If verdict is UNVERIFIABLE or confidence is LOW/INFERENCE ONLY: your best probabilistic estimate clearly labeled as inference. Otherwise null.",
   "framingFlags": ["any manipulation techniques or misleading framing detected"],
+  "frameAnalysis": {
+    "problemDefined": "What problem is this claim defining or constructing? null if none.",
+    "blameAssigned": "Who or what is being blamed, and is a causal mechanism provided? null if none.",
+    "moralJudgment": "Is a moral verdict being presented as observable fact? Quote the specific language. null if none.",
+    "remedyImplied": "Is a specific remedy being presented as the only option? null if none."
+  },
+  "prebunkLesson": {
+    "technique": "Name of the manipulation technique detected, or null if none.",
+    "explanation": "One sentence: how this technique works to bypass critical thinking.",
+    "watchFor": "One sentence: what to look for next time you encounter this technique."
+  },
   "incentiveBias": "Who benefits if believed? null if none.",
+  "gapReason": "If unverifiable, which applies: PRIMARY_SOURCE_MISSING | TOO_VAGUE | TIME_SENSITIVE | OPINION_AS_FACT | UNFALSIFIABLE_BY_DESIGN | CONTESTED_EVIDENCE. null if not applicable.",
+  "pathForward": "Specific actionable step: what exactly to look up, where, and what to look for. Not generic.",
   "claimDNA": {
     "verifiablePieces": ["parts that CAN be fact-checked"],
     "unverifiablePieces": ["parts that CANNOT be verified"]
@@ -144,8 +159,12 @@ Respond ONLY with valid JSON — no text before or after:
 
 Rules:
 - verdictLabel MUST be one of the exact strings above. Never leave blank.
-- If unsure, still give your best verdict and lower the confidence score.
-- Never say "I cannot determine" — analyze what you can, flag what you can't.
+- confidenceLabel: HIGH = strong evidence, MODERATE = consistent pattern, LOW = thin/contested, INFERENCE ONLY = no direct evidence.
+- educatedInference: never refuse to estimate — label it clearly as inference and give your best probabilistic read.
+- frameAnalysis: look for structural manipulation, not just loaded words. A claim can use neutral language and still manipulate through framing.
+- prebunkLesson: if a technique is detected, name it and teach it. This helps the user recognize it next time.
+- gapReason: be specific about WHY something can't be verified, not just that it can't.
+- pathForward: name a specific source, database, or record type. Never say "verify independently."
 - Emotional language that distorts facts = MISLEADING even if partially true.
 - plainSummary must be written for a general audience.
 - reasoning must be specific, not generic boilerplate.`;
@@ -201,12 +220,24 @@ function patternAnalysis(claim, claimType, dna) {
         "AI analysis was unavailable. Use the sources below to verify."
     ].filter(Boolean).join(" ");
 
+    const confidence = flags.length > 0 ? 0.55 : 0.35;
+    const confidenceLabel = flags.length >= 3 ? "LOW" : flags.length >= 1 ? "LOW" : "INFERENCE ONLY";
+
     return {
         verdictLabel: verdict, verifiable, reproducible, contextuallyHonest, falsifiable,
-        confidence: flags.length > 0 ? 0.55 : 0.35,
+        confidence,
+        confidenceLabel,
         plainSummary: summary,
         reasoning: flags.length > 0 ? `Pattern analysis detected: ${flags.join("; ")}.` : "No obvious manipulation patterns detected. AI unavailable for deeper analysis.",
-        framingFlags: flags, incentiveBias,
+        educatedInference: (verdict === "UNVERIFIABLE" || verdict === "LOW CONFIDENCE")
+            ? `Based on language patterns alone: this claim shows ${flags.length} warning sign(s). Without AI analysis, a definitive verdict is not possible, but the presence of ${flags.length > 0 ? "manipulation patterns" : "vague or unattributed language"} is a signal to verify carefully before accepting or sharing.`
+            : null,
+        framingFlags: flags,
+        frameAnalysis: null,   // populated by AI only
+        prebunkLesson: null,   // populated by AI only — Stage 4 will add offline lessons
+        incentiveBias,
+        gapReason: !dna.checkable ? "TOO_VAGUE" : claimType === CLAIM_TYPES.OPINION ? "OPINION_AS_FACT" : null,
+        pathForward: `Start with the sources listed below. Look for a primary source — an official record, government data, or peer-reviewed study — that directly addresses the specific claim.`,
         claimDNA: {
             verifiablePieces: dna.entities.length > 0 ? dna.entities : ["No specific verifiable entities found"],
             unverifiablePieces: dna.checkable ? [] : ["Claim is too vague to fact-check specifically"]
@@ -295,17 +326,23 @@ class NLPEngine {
             if (match) clean = match[0];
             const p = JSON.parse(clean);
             return {
-                verdictLabel: p.verdictLabel || null,
-                verifiable:   this._clamp(p.verifiable),
-                reproducible: this._clamp(p.reproducible),
+                verdictLabel:      p.verdictLabel || null,
+                verifiable:        this._clamp(p.verifiable),
+                reproducible:      this._clamp(p.reproducible),
                 contextuallyHonest: this._clamp(p.contextuallyHonest),
-                falsifiable:  this._clamp(p.falsifiable),
-                confidence:   this._clamp(p.confidence),
-                plainSummary: p.plainSummary || "",
-                reasoning:    p.reasoning    || "",
-                framingFlags: Array.isArray(p.framingFlags) ? p.framingFlags : [],
-                incentiveBias: p.incentiveBias || null,
-                claimDNA:     p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
+                falsifiable:       this._clamp(p.falsifiable),
+                confidence:        this._clamp(p.confidence),
+                confidenceLabel:   p.confidenceLabel || null,
+                plainSummary:      p.plainSummary || "",
+                reasoning:         p.reasoning    || "",
+                educatedInference: p.educatedInference || null,
+                framingFlags:      Array.isArray(p.framingFlags) ? p.framingFlags : [],
+                frameAnalysis:     p.frameAnalysis || null,
+                prebunkLesson:     p.prebunkLesson?.technique ? p.prebunkLesson : null,
+                incentiveBias:     p.incentiveBias || null,
+                gapReason:         p.gapReason || null,
+                pathForward:       p.pathForward || null,
+                claimDNA:          p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
                 provider, method: "llm"
             };
         } catch { return null; }
