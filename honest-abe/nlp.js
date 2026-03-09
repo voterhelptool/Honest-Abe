@@ -1,225 +1,329 @@
 /**
  * HONEST ABE — nlp.js
  *
- * The agent doesn't care who answers.
- * It cares that the answer meets the standard.
+ * Truth is not always in the middle. Some things are just wrong.
+ * This engine is not afraid to say so.
  *
- * Provider-agnostic NLP adapter layer.
- * Add new providers by dropping a file in /adapters.
- * Remove broken ones by commenting out one line.
- * The bedrock (pattern matching) never goes away.
+ * Pipeline:
+ *   1. TRIAGE    — what kind of claim is this?
+ *   2. CLAIM DNA — break it into checkable pieces
+ *   3. EVIDENCE  — language flags, patterns, red flags
+ *   4. VERDICT   — TRUE / MOSTLY TRUE / MISLEADING / MOSTLY FALSE / FALSE / OPINION / UNVERIFIABLE
+ *   5. SOURCES   — 3 dynamic sources by claim type, labeled by political lean
  *
- * FREE · FAIR · FIRM · FUN · TRUE · TRANSPARENT · ACCESSIBLE
+ * Never returns empty. Always gives context.
+ * LOW CONFIDENCE is honest. Silence is not.
  */
 
-// ── DEPENDENCIES ─────────────────────────────────────────────────────────
-// In browser: load hallucination-guard.js before this file.
-// In Node: const { guard, RESULT } = require('./hallucination-guard.js');
-
 // ── PROVIDER REGISTRY ─────────────────────────────────────────────────────
-// Priority order: fastest/freest first, local last as deepest fallback.
-// Community can propose reordering via agent.js proposal system.
-// Each provider must implement: { name, available(), query(prompt) }
+function getProviders() {
+    return [
+        window._HonestAbeAdapter_OpenRouter,   // Free DeepSeek R1, Llama 3, Qwen — no account needed
+        window._HonestAbeAdapter_OllamaFree,   // Zero config, no account
+        window._HonestAbeAdapter_Mlvoca,       // No key, no account
+        window._HonestAbeAdapter_HuggingFace,  // Rate limited free
+        window._HonestAbeAdapter_Mistral,      // Free tier
+        window._HonestAbeAdapter_WebLLM,       // Fully local
+        window._HonestAbeAdapter_Puter,        // Free Claude — requires free Puter account
+        window._HonestAbeAdapter_Pattern,      // Bedrock — always works, no AI needed
+    ].filter(Boolean);
+}
 
-const PROVIDERS = [
-    () => import('./adapters/puter.js'),        // No key, no account, 500+ models
-    () => import('./adapters/mlvoca.js'),        // No key, Ollama-compatible endpoint
-    () => import('./adapters/huggingface.js'),   // Free account, open models
-    () => import('./adapters/mistral.js'),       // Free tier, privacy-focused
-    () => import('./adapters/webllm.js'),        // Fully local, WebGPU, no internet
-    () => import('./adapters/pattern.js'),       // Bedrock — always works, no AI
-];
+// ── CLAIM TYPES ───────────────────────────────────────────────────────────
+const CLAIM_TYPES = {
+    FACTUAL: "factual", STATISTICAL: "statistical", HISTORICAL: "historical",
+    OPINION: "opinion", EMOTIONAL: "emotional",     SCIENTIFIC: "scientific",
+    LEGAL:   "legal",   ECONOMIC:   "economic",
+};
 
-// ── STANDARD INTERFACE ────────────────────────────────────────────────────
-// Every adapter must implement this. Nothing else is required.
-//
-//   name        {string}  Human-readable provider name
-//   available() {bool}    Can this provider be reached right now?
-//   query(prompt) {string} Send prompt, get response text back
-//
-// That's it. The layer does the rest.
+// ── SOURCE LIBRARY ────────────────────────────────────────────────────────
+// Labeled honestly. We don't pretend everything is neutral.
+const SOURCES = {
+    factcheck:  { name: "FactCheck.org",           url: "https://www.factcheck.org",             lean: "Center" },
+    politifact: { name: "PolitiFact",              url: "https://www.politifact.com",            lean: "Center-Left" },
+    snopes:     { name: "Snopes",                  url: "https://www.snopes.com",                lean: "Center-Left" },
+    dispatch:   { name: "The Dispatch",            url: "https://thedispatch.com/fact-check",    lean: "Center-Right" },
+    leadstories:{ name: "Lead Stories",            url: "https://leadstories.com",               lean: "Center" },
+    ap:         { name: "Associated Press",         url: "https://apnews.com",                    lean: "Center" },
+    reuters:    { name: "Reuters",                  url: "https://www.reuters.com",               lean: "Center" },
+    npr:        { name: "NPR",                      url: "https://www.npr.org",                   lean: "Center-Left" },
+    bbc:        { name: "BBC News",                 url: "https://www.bbc.com/news",              lean: "Center" },
+    wsj:        { name: "Wall Street Journal",      url: "https://www.wsj.com",                   lean: "Center-Right" },
+    examiner:   { name: "Washington Examiner",      url: "https://www.washingtonexaminer.com",    lean: "Right" },
+    hill:       { name: "The Hill",                 url: "https://thehill.com",                   lean: "Center" },
+    guardian:   { name: "The Guardian",             url: "https://www.theguardian.com",           lean: "Left" },
+    cdc:        { name: "CDC",                      url: "https://www.cdc.gov",                   lean: "Government" },
+    nih:        { name: "NIH",                      url: "https://www.nih.gov",                   lean: "Government" },
+    bls:        { name: "Bureau of Labor Stats",    url: "https://www.bls.gov",                   lean: "Government" },
+    census:     { name: "U.S. Census Bureau",       url: "https://www.census.gov",                lean: "Government" },
+    fred:       { name: "FRED Economic Data",       url: "https://fred.stlouisfed.org",           lean: "Government" },
+    pubmed:     { name: "PubMed",                   url: "https://pubmed.ncbi.nlm.nih.gov",       lean: "Scientific" },
+    ourworld:   { name: "Our World in Data",        url: "https://ourworldindata.org",            lean: "Center" },
+    archives:   { name: "National Archives",        url: "https://www.archives.gov",              lean: "Government" },
+    britannica: { name: "Encyclopaedia Britannica", url: "https://www.britannica.com",            lean: "Center" },
+    historian:  { name: "History.com",              url: "https://www.history.com",               lean: "Center" },
+    scotus:     { name: "Supreme Court",            url: "https://www.supremecourt.gov",          lean: "Government" },
+    congress:   { name: "Congress.gov",             url: "https://www.congress.gov",              lean: "Government" },
+    ballotpedia:{ name: "Ballotpedia",              url: "https://ballotpedia.org",               lean: "Center" },
+    allsides:   { name: "AllSides",                 url: "https://www.allsides.com",              lean: "Center" },
+    mbfc:       { name: "Media Bias/Fact Check",    url: "https://mediabiasfactcheck.com",        lean: "Center" },
+};
 
-// ── NLP ENGINE ────────────────────────────────────────────────────────────
+function getSourcesForClaim(claimType, keywords = []) {
+    const kw = keywords.join(" ").toLowerCase();
 
-class NLPEngine {
+    if (/vaccine|covid|virus|disease|health|medical/.test(kw))   return [SOURCES.cdc,        SOURCES.nih,        SOURCES.pubmed];
+    if (/election|vote|ballot|candidate|congress|senate/.test(kw)) return [SOURCES.ballotpedia, SOURCES.factcheck,  SOURCES.ap];
+    if (/economy|inflation|jobs|unemployment|gdp|wage/.test(kw))  return [SOURCES.fred,       SOURCES.bls,        SOURCES.reuters];
+    if (/climate|environment|carbon|emission/.test(kw))           return [SOURCES.pubmed,     SOURCES.ourworld,   SOURCES.ap];
+    if (/crime|police|fbi|arrest|murder/.test(kw))                return [SOURCES.ap,         SOURCES.factcheck,  SOURCES.bbc];
+    if (/immigration|border|migrant|deportation/.test(kw))        return [SOURCES.ap,         SOURCES.factcheck,  SOURCES.examiner];
+    if (/war|military|troops|weapon|nato/.test(kw))               return [SOURCES.reuters,    SOURCES.bbc,        SOURCES.hill];
 
-    constructor() {
-        this._cache     = new Map();   // avoid redundant calls
-        this._log       = [];          // full audit trail (TRANSPARENT)
-        this._active    = null;        // currently working provider
-    }
+    const sets = {
+        [CLAIM_TYPES.FACTUAL]:     [SOURCES.ap,         SOURCES.factcheck,  SOURCES.dispatch],
+        [CLAIM_TYPES.STATISTICAL]: [SOURCES.ourworld,   SOURCES.bls,        SOURCES.reuters],
+        [CLAIM_TYPES.HISTORICAL]:  [SOURCES.britannica, SOURCES.archives,   SOURCES.historian],
+        [CLAIM_TYPES.OPINION]:     [SOURCES.allsides,   SOURCES.mbfc,       SOURCES.factcheck],
+        [CLAIM_TYPES.EMOTIONAL]:   [SOURCES.factcheck,  SOURCES.snopes,     SOURCES.leadstories],
+        [CLAIM_TYPES.SCIENTIFIC]:  [SOURCES.pubmed,     SOURCES.nih,        SOURCES.ourworld],
+        [CLAIM_TYPES.LEGAL]:       [SOURCES.congress,   SOURCES.scotus,     SOURCES.ballotpedia],
+        [CLAIM_TYPES.ECONOMIC]:    [SOURCES.fred,       SOURCES.bls,        SOURCES.wsj],
+    };
+    return sets[claimType] || [SOURCES.ap, SOURCES.factcheck, SOURCES.reuters];
+}
 
-    // Primary interface — call this from truth-model.js
-    async analyze(claim, context = {}) {
-        const cacheKey = claim.trim().toLowerCase();
-        if (this._cache.has(cacheKey)) {
-            this._record("cache", "HIT", cacheKey);
-            return this._cache.get(cacheKey);
-        }
+// ── TRIAGE ────────────────────────────────────────────────────────────────
+function triageClaim(claim) {
+    const c = claim.toLowerCase();
+    if (/\b(\d+%|\d+ percent|statistics show|data shows|studies show|research shows|according to)\b/.test(c)) return CLAIM_TYPES.STATISTICAL;
+    if (/\b(in \d{4}|during the|history of|historically|century|decade|era|president .* said)\b/.test(c))      return CLAIM_TYPES.HISTORICAL;
+    if (/\b(i think|i believe|in my opinion|we should|should be|it's wrong|it's right|must|ought)\b/.test(c))  return CLAIM_TYPES.OPINION;
+    if (/\b(law|illegal|legal|court|ruling|constitution|rights|ban|crime|arrested)\b/.test(c))                 return CLAIM_TYPES.LEGAL;
+    if (/\b(economy|gdp|inflation|unemployment|market|stock|wage|tax|debt|deficit)\b/.test(c))                 return CLAIM_TYPES.ECONOMIC;
+    if (/\b(vaccine|study|science|research|doctor|cancer|drug|treatment|proven|disproven)\b/.test(c))          return CLAIM_TYPES.SCIENTIFIC;
+    if (/\b(outrage|shocking|disgusting|unbelievable|wake up|hidden|secret|destroy|they don't want)\b/.test(c)) return CLAIM_TYPES.EMOTIONAL;
+    return CLAIM_TYPES.FACTUAL;
+}
 
-        const prompt = this._buildPrompt(claim, context);
+// ── CLAIM DNA ─────────────────────────────────────────────────────────────
+function extractDNA(claim) {
+    const words = claim.split(/\s+/);
+    return {
+        keywords: words.filter(w => w.length > 4).map(w => w.toLowerCase().replace(/[^a-z]/g, "")),
+        entities: words.filter(w => /^[A-Z][a-z]+/.test(w) || /^\d+/.test(w)),
+        checkable: words.length >= 4 && !/^(some|many|people|they|everyone)\b/i.test(claim),
+    };
+}
 
-        for (const load of PROVIDERS) {
-            let adapter;
-            try {
-                const mod = await load();
-                adapter = mod.default || mod;
-
-                if (!await adapter.available()) {
-                    this._record(adapter.name, "UNAVAILABLE", null);
-                    continue;
-                }
-
-                this._record(adapter.name, "ATTEMPTING", claim.slice(0, 80));
-                const raw    = await this._withTimeout(adapter.query(prompt), 8000);
-                const parsed = this._parse(raw, adapter.name);
-
-                // ── HALLUCINATION GUARD ───────────────────────────────────
-                // Every provider response must pass self-interrogation.
-                // If reasoning is internally inconsistent — kill and try next.
-                const guarded = guard.interrogate(parsed, claim);
-
-                if (guarded.status === RESULT.KILL) {
-                    this._record(adapter.name, "GUARD_KILLED", guarded.reason);
-                    continue;  // try next provider
-                }
-
-                const result = guarded.result;
-                this._record(adapter.name, "SUCCESS", result.pillarAverage);
-                this._active = adapter.name;
-                this._cache.set(cacheKey, result);
-                return result;
-
-            } catch (err) {
-                this._record(adapter?.name || "unknown", "FAILED", err.message);
-                continue;
-            }
-        }
-
-        // All providers killed by hallucination guard or failed
-        // Never return a guess. Return honest uncertainty.
-        return guard.inconclusive(claim, guard.audit().killLog);
-    }
-
-    // ── PROMPT ────────────────────────────────────────────────────────────
-    // Structured prompt that extracts the 4 pillars from any LLM.
-    // Provider-agnostic — works with any model.
-
-    _buildPrompt(claim, context = {}) {
-        return `You are an impartial truth analysis engine. Evaluate the following claim strictly on evidence.
+// ── PROMPT ────────────────────────────────────────────────────────────────
+function buildPrompt(claim, claimType, dna) {
+    return `You are Honest Abe, a truth analysis engine. Truth is not always in the middle — some claims are just false. Say so when they are.
 
 CLAIM: "${claim}"
-${context.url ? `SOURCE URL: ${context.url}` : ""}
-${context.surrounding ? `SURROUNDING TEXT: ${context.surrounding}` : ""}
+CLAIM TYPE: ${claimType}
+KEY ENTITIES: ${dna.entities.join(", ") || "none identified"}
 
-Respond ONLY with a JSON object in this exact format:
+Respond ONLY with valid JSON — no text before or after:
 {
+  "verdictLabel": "TRUE" | "MOSTLY TRUE" | "MISLEADING" | "MOSTLY FALSE" | "FALSE" | "OPINION" | "UNVERIFIABLE",
   "verifiable": 0.0-1.0,
   "reproducible": 0.0-1.0,
   "contextuallyHonest": 0.0-1.0,
   "falsifiable": 0.0-1.0,
-  "incentiveBias": "string or null",
-  "framingFlags": ["array of strings"],
-  "plainSummary": "1-2 sentence plain English summary",
-  "confidence": 0.0-1.0
+  "confidence": 0.0-1.0,
+  "plainSummary": "2-3 sentences plain English. Be direct. If it's false, say it's false.",
+  "reasoning": "Specific explanation of WHY this verdict. What evidence exists or doesn't?",
+  "framingFlags": ["any manipulation techniques or misleading framing detected"],
+  "incentiveBias": "Who benefits if believed? null if none.",
+  "claimDNA": {
+    "verifiablePieces": ["parts that CAN be fact-checked"],
+    "unverifiablePieces": ["parts that CANNOT be verified"]
+  }
 }
 
 Rules:
-- verifiable: can this be traced to a primary source?
-- reproducible: would independent sources agree?
-- contextuallyHonest: is it framed to mislead even if technically true?
-- falsifiable: could evidence disprove this?
-- incentiveBias: who benefits if this claim is believed? null if none detected.
-- framingFlags: list any manipulation techniques detected
-- plainSummary: explain in plain language a 12-year-old could understand
-- confidence: how confident are you in this analysis?
-Do not include any text outside the JSON object.`;
-    }
-
-    // ── PARSE ─────────────────────────────────────────────────────────────
-    // Normalize whatever the provider returns into our standard shape.
-
-    _parse(raw, providerName) {
-        try {
-            const clean = raw.replace(/```json|```/g, "").trim();
-            const parsed = JSON.parse(clean);
-            return {
-                verifiable:        this._clamp(parsed.verifiable),
-                reproducible:      this._clamp(parsed.reproducible),
-                contextuallyHonest: this._clamp(parsed.contextuallyHonest),
-                falsifiable:       this._clamp(parsed.falsifiable),
-                incentiveBias:     parsed.incentiveBias || null,
-                framingFlags:      Array.isArray(parsed.framingFlags) ? parsed.framingFlags : [],
-                plainSummary:      parsed.plainSummary || "",
-                confidence:        this._clamp(parsed.confidence),
-                provider:          providerName,
-                method:            "llm"
-            };
-        } catch {
-            // Provider returned non-JSON — extract what we can
-            return this._fallbackResult(raw, providerName);
-        }
-    }
-
-    // ── HELPERS ───────────────────────────────────────────────────────────
-
-    _clamp(val) {
-        const n = parseFloat(val);
-        return isNaN(n) ? 0.5 : Math.min(1, Math.max(0, n));
-    }
-
-    _withTimeout(promise, ms) {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)
-            )
-        ]);
-    }
-
-    _fallbackResult(claim, provider = "pattern") {
-        return {
-            verifiable:         0.5,
-            reproducible:       0.5,
-            contextuallyHonest: 0.5,
-            falsifiable:        0.5,
-            incentiveBias:      null,
-            framingFlags:       [],
-            plainSummary:       "Analysis unavailable. Manual review recommended.",
-            confidence:         0.1,
-            provider,
-            method:             "fallback"
-        };
-    }
-
-    _record(provider, status, detail) {
-        this._log.push({
-            provider,
-            status,
-            detail,
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    // Full audit — TRANSPARENT is non-negotiable
-    audit() {
-        return {
-            log:            this._log,
-            activeProvider: this._active,
-            cacheSize:      this._cache.size
-        };
-    }
-
-    // Clear provider priority — community can reorder
-    reorderProviders(newOrder) {
-        // newOrder: array of provider names in desired priority
-        // Implemented when adapter registry moves to config file
-        console.log("[Honest Abe NLP] Provider reorder proposed:", newOrder);
-        console.log("[Honest Abe NLP] Requires community approval via agent.js proposal system.");
-    }
+- verdictLabel MUST be one of the exact strings above. Never leave blank.
+- If unsure, still give your best verdict and lower the confidence score.
+- Never say "I cannot determine" — analyze what you can, flag what you can't.
+- Emotional language that distorts facts = MISLEADING even if partially true.
+- plainSummary must be written for a general audience.
+- reasoning must be specific, not generic boilerplate.`;
 }
 
-// Singleton — one engine, shared, auditable
-const nlp = new NLPEngine();
+// ── PATTERN FALLBACK ──────────────────────────────────────────────────────
+function patternAnalysis(claim, claimType, dna) {
+    const c = claim.toLowerCase();
+    const flags = [];
+    let verifiable = 0.5, reproducible = 0.5, contextuallyHonest = 0.8, falsifiable = 0.7;
 
+    const patterns = [
+        { p: /\b(all|always|never|every|none)\b/i,                    f: "Absolute generalization — real issues are rarely absolute" },
+        { p: /\b(they|those people|the left|the right|elites)\b/i,    f: "Vague othering — who specifically?" },
+        { p: /\b(everyone knows|obviously|clearly|just|simply)\b/i,   f: "False consensus — not everyone agrees" },
+        { p: /\b(some say|many feel|people are saying)\b/i,           f: "Claim dodge — attribution without evidence" },
+        { p: /\b(wake up|sheeple|they don't want you to know)\b/i,    f: "Conspiracy framing" },
+        { p: /\b(fake news|mainstream media|lamestream)\b/i,          f: "Media delegitimization — dismissing sources without evidence" },
+        { p: /\b(deep state|globalist|elite agenda|cabal)\b/i,        f: "Conspiracy framing" },
+        { p: /\b(suppress|hide|cover.?up|censored)\b/i,               f: "Suppression framing — extraordinary claim, needs evidence" },
+        { p: /\b(do your own research|dyor)\b/i,                      f: "Anti-expert framing" },
+        { p: /\b(destroy|invasion|war on|radical|threat)\b/i,         f: "Inflammatory language — designed to provoke, not inform" },
+        { p: /\b(100%|proven fact|undeniable|irrefutable)\b/i,        f: "Overcertainty — few things are 100% proven" },
+    ];
+
+    patterns.forEach(({ p, f }) => { if (p.test(c)) flags.push(f); });
+
+    if (flags.length >= 3) { contextuallyHonest = 0.2; reproducible = 0.3; verifiable = 0.3; }
+    else if (flags.length >= 1) { contextuallyHonest = 0.5; }
+
+    if (/\b(god|divine|spiritual|destiny|fate|supernatural)\b/i.test(c)) falsifiable = 0.1;
+
+    let incentiveBias = null;
+    if (/\b(buy|purchase|sale|sponsored|advertisement|our product)\b/i.test(c)) {
+        incentiveBias = "Commercial language — source may have financial interest in this claim";
+        verifiable = Math.min(verifiable, 0.3);
+    }
+
+    if (claimType === CLAIM_TYPES.STATISTICAL && !/\b(according to|source:|cdc|fbi|census|study)\b/i.test(c)) {
+        flags.push("Statistical claim with no cited source");
+        verifiable = Math.min(verifiable, 0.35);
+    }
+
+    const verdict = claimType === CLAIM_TYPES.OPINION ? "OPINION"
+        : flags.length >= 3 ? "MISLEADING"
+        : flags.length >= 1 ? "LOW CONFIDENCE"
+        : "LOW CONFIDENCE";
+
+    const summary = [
+        flags.length > 0 ? `This claim contains ${flags.length} warning sign${flags.length > 1 ? "s" : ""}: ${flags.slice(0,2).join("; ")}.` : "",
+        claimType === CLAIM_TYPES.OPINION ? "This appears to be an opinion, not a factual claim." : "",
+        claimType === CLAIM_TYPES.STATISTICAL ? "Statistical claims require a cited source — verify the numbers independently." : "",
+        "AI analysis was unavailable. Use the sources below to verify."
+    ].filter(Boolean).join(" ");
+
+    return {
+        verdictLabel: verdict, verifiable, reproducible, contextuallyHonest, falsifiable,
+        confidence: flags.length > 0 ? 0.55 : 0.35,
+        plainSummary: summary,
+        reasoning: flags.length > 0 ? `Pattern analysis detected: ${flags.join("; ")}.` : "No obvious manipulation patterns detected. AI unavailable for deeper analysis.",
+        framingFlags: flags, incentiveBias,
+        claimDNA: {
+            verifiablePieces: dna.entities.length > 0 ? dna.entities : ["No specific verifiable entities found"],
+            unverifiablePieces: dna.checkable ? [] : ["Claim is too vague to fact-check specifically"]
+        },
+        provider: "pattern", method: "pattern"
+    };
+}
+
+// ── NLP ENGINE ────────────────────────────────────────────────────────────
+class NLPEngine {
+    constructor() {
+        this._cache  = new Map();
+        this._log    = [];
+        this._active = null;
+    }
+
+    async analyze(claim, context = {}) {
+        const key = claim.trim().toLowerCase();
+        if (this._cache.has(key)) return this._cache.get(key);
+
+        const claimType = triageClaim(claim);
+        const dna       = extractDNA(claim);
+        const prompt    = buildPrompt(claim, claimType, dna);
+
+        this._log("triage", "CLASSIFIED", claimType);
+
+        let result = null;
+
+        for (const adapter of getProviders()) {
+            if (adapter.name === "pattern") break;
+            try {
+                const avail = await this._timeout(Promise.resolve(adapter.available()), 2000);
+                if (!avail) { this._log(adapter.name, "UNAVAILABLE"); continue; }
+
+                this._log(adapter.name, "ATTEMPTING", claim.slice(0, 60));
+                const raw    = await this._timeout(adapter.query(prompt), 14000);
+                const parsed = this._parse(raw, adapter.name);
+
+                if (!parsed?.verdictLabel) { this._log(adapter.name, "BAD_RESPONSE"); continue; }
+
+                result = parsed;
+                this._active = adapter.name;
+                this._log(adapter.name, "SUCCESS", parsed.verdictLabel);
+                break;
+            } catch (e) {
+                this._log(adapter?.name || "?", "FAILED", e?.message);
+            }
+        }
+
+        if (!result) {
+            this._log("pattern", "FALLBACK");
+            result = patternAnalysis(claim, claimType, dna);
+        }
+
+        const sources    = getSourcesForClaim(claimType, dna.keywords);
+        const pillarAvg  = (result.verifiable + result.reproducible + result.contextuallyHonest + result.falsifiable) / 4;
+        const verdict    = claimType === CLAIM_TYPES.OPINION ? "OPINION" : (result.verdictLabel || this._scoreToVerdict(pillarAvg, result.confidence));
+
+        const final = {
+            ...result, verdict, claimType, sources, pillarAverage: pillarAvg,
+            pillars: {
+                verifiable:         result.verifiable,
+                reproducible:       result.reproducible,
+                contextuallyHonest: result.contextuallyHonest,
+                falsifiable:        result.falsifiable,
+            }
+        };
+
+        this._cache.set(key, final);
+        return final;
+    }
+
+    _scoreToVerdict(avg, confidence) {
+        if (avg >= 0.82) return "TRUE";
+        if (avg >= 0.65) return "MOSTLY TRUE";
+        if (avg >= 0.50) return "MISLEADING";
+        if (avg >= 0.35) return "MOSTLY FALSE";
+        if (avg >= 0.20) return "FALSE";
+        return confidence < 0.4 ? "LOW CONFIDENCE" : "MISLEADING";
+    }
+
+    _parse(raw, provider) {
+        try {
+            let clean = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```json|```/g, "").trim();
+            const match = clean.match(/\{[\s\S]*\}/);
+            if (match) clean = match[0];
+            const p = JSON.parse(clean);
+            return {
+                verdictLabel: p.verdictLabel || null,
+                verifiable:   this._clamp(p.verifiable),
+                reproducible: this._clamp(p.reproducible),
+                contextuallyHonest: this._clamp(p.contextuallyHonest),
+                falsifiable:  this._clamp(p.falsifiable),
+                confidence:   this._clamp(p.confidence),
+                plainSummary: p.plainSummary || "",
+                reasoning:    p.reasoning    || "",
+                framingFlags: Array.isArray(p.framingFlags) ? p.framingFlags : [],
+                incentiveBias: p.incentiveBias || null,
+                claimDNA:     p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
+                provider, method: "llm"
+            };
+        } catch { return null; }
+    }
+
+    _clamp(v) { const n = parseFloat(v); return isNaN(n) ? 0.5 : Math.min(1, Math.max(0, n)); }
+
+    _timeout(p, ms) {
+        return Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))]);
+    }
+
+    _log(provider, status, detail) {
+        this._log.push?.({ provider, status, detail, ts: Date.now() });
+        console.log(`[Honest Abe] ${provider} → ${status}`, detail ?? "");
+    }
+
+    audit() { return { log: this._log, activeProvider: this._active, cacheSize: this._cache.size }; }
+}
+
+const nlp = new NLPEngine();
 if (typeof module !== "undefined") module.exports = { NLPEngine, nlp };
