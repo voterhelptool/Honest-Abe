@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 14px;
+    z-index: 9999;
+    text-decoration: none;
+    border-radius: 0 0 4px 0;
+  }
+  .skip-link:focus { top: 0; }
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="Honest Abe — A free, open truth agent. Free. Fair. Firm. Fun. True. Transparent. Accessible.">
+<link rel="manifest" href="pwa-manifest.json">
+<title>Honest Abe</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:       #1a1a2e;
+    --parchment: #f5f0e8;
+    --gold:      #a07608; /* darkened from #b8860b for 4.5:1 on parchment */
+    --green:     #1b5e20; /* darkened for contrast */
+    --amber:     #bf3d00; /* darkened for contrast */
+    --red:       #b71c1c; /* darkened for contrast */
+    --muted:     #4a4a5a; /* was #6b6b7a — too low contrast, now passes 4.5:1 */
+    --border:    #d4c9b0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Source Serif 4', serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--parchment);
+    padding: 24px max(24px, 5vw);
+    border-bottom: 4px solid var(--gold);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .abe-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .abe-logo span { color: var(--gold); }
+  .abe-tagline {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #c8c0b0; /* explicit color instead of opacity — passes 3:1 on dark bg (large text) */
+    margin-top: 5px;
+  }
+  .abe-nav {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .abe-nav a { color: #c8c0b0; text-decoration: underline; }
+  .abe-nav a:hover, .abe-nav a:focus { color: var(--gold); outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ── CONSTITUTION ── */
+  .constitution {
+    background: #111128;
+    padding: 10px max(24px, 5vw);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .principle {
+    font-size: 12px; /* minimum readable, was 9px */
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #c9962a; /* explicit gold that passes 3:1 on #111128 bg */
+  }
+  .principle::after { content: "·"; margin-left: 8px; color: #666; }
+  .principle:last-child::after { content: ""; }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px max(24px, 5vw);
+  }
+
+  /* ── INPUT ── */
+  .input-section { margin-bottom: 32px; }
+  .section-label {
+    font-size: 13px; /* was 10px — too small */
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px 16px;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink);
+    resize: vertical;
+  }
+  textarea:focus { border-color: var(--gold); outline: 3px solid var(--gold); outline-offset: 1px; }
+
+  .btn-row { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+  .analyze-btn {
+    padding: 12px 28px;
+    background: var(--ink);
+    color: var(--parchment);
+    border: 2px solid transparent;
+    border-radius: 4px;
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .analyze-btn:hover    { background: #2a2a4a; }
+  .analyze-btn:focus    { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .provider-status {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* Global focus ring for keyboard nav */
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* ── RESULTS ── */
+  #results { display: none; }
+
+  .verdict-box {
+    padding: 18px 20px;
+    border-radius: 6px;
+    border-left: 5px solid;
+    margin-bottom: 24px;
+  }
+  .verdict-box.pass    { background:#e8f5e9; border-color: var(--green); }
+  .verdict-box.warn    { background:#fff8e1; border-color: var(--gold); }
+  .verdict-box.fail    { background:#fce4ec; border-color: var(--red); }
+  .verdict-box.unknown { background:#f5f5f5; border-color: #bbb; }
+
+  .verdict-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .verdict-summary { font-size: 13px; line-height: 1.7; opacity: 0.85; }
+
+  /* ── PILLARS ── */
+  .pillars-grid { margin-bottom: 20px; }
+  .pillar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .pillar-name { width: 160px; flex-shrink: 0; }
+  .pillar-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: #e0dbd0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .pillar-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.7s ease;
+  }
+  .pillar-score { width: 36px; text-align: right; font-size: 11px; color: var(--muted); }
+
+  /* ── FLAGS + BIAS ── */
+  .flag-item {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 5px;
+    line-height: 1.5;
+  }
+  .flag-item::before { content: "⚠"; flex-shrink: 0; }
+
+  .bias-box {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #fff3e0;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #e65100;
+    line-height: 1.6;
+    display: none;
+  }
+
+  /* ── INTEGRITY ── */
+  .integrity-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .integrity-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 32px max(24px, 5vw);
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 2;
+  }
+  footer strong { color: var(--ink); }
+  footer a { color: var(--gold); text-decoration: underline; }
+  footer a:focus { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* Screen-reader-only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<header role="banner">
+  <div>
+    <div class="abe-logo" aria-label="Honest Abe">Honest <span aria-hidden="true">Abe</span></div>
+    <div class="abe-tagline">A truth agent for everyone</div>
+  </div>
+  <nav class="abe-nav" aria-label="Site navigation">
+    <a href="https://github.com/voterhelptool/Honest-Abe" target="_blank" rel="noopener" aria-label="View source on GitHub (opens in new tab)">GitHub</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<div class="constitution" role="list" aria-label="Honest Abe's seven guiding principles">
+  <span class="principle" role="listitem">Free</span>
+  <span class="principle" role="listitem">Fair</span>
+  <span class="principle" role="listitem">Firm</span>
+  <span class="principle" role="listitem">Fun</span>
+  <span class="principle" role="listitem">True</span>
+  <span class="principle" role="listitem">Transparent</span>
+  <span class="principle" role="listitem">Accessible</span>
+</div>
+
+<main id="main-content">
+
+  <div class="input-section">
+    <label for="claimInput" class="section-label">Submit a claim for analysis</label>
+    <textarea id="claimInput" placeholder="Paste or type any claim, headline, or statement you'd like Honest Abe to evaluate…" aria-describedby="claimHint" rows="4"></textarea>
+    <div id="claimHint" style="font-size:13px;color:var(--muted);margin-top:6px;">Press Ctrl+Enter to analyze.</div>
+    <div class="btn-row">
+      <button class="analyze-btn" id="analyzeBtn" aria-live="polite">Analyze</button>
+      <span class="provider-status" id="providerStatus" aria-live="polite" aria-atomic="true"></span>
+    </div>
+  </div>
+
+  <div id="results" role="region" aria-label="Analysis results" aria-live="polite" aria-atomic="false">
+
+    <div class="verdict-box" id="verdictBox">
+      <div class="verdict-label" id="verdictLabel"></div>
+      <div class="verdict-summary" id="verdictSummary"></div>
+    </div>
+
+    <div class="section-label" aria-hidden="true">Four Pillars of Truth</div>
+    <div class="pillars-grid" role="list" aria-label="Four Pillars of Truth scores">
+      <div class="pillar-row" role="listitem">
+        <span class="pillar-name">Verifiable</span>
+        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelV"><div class="pillar-bar" id="barV"></div></div>
+        <span class="pillar-score" id="scoreV" aria-live="polite"></span>
+        <span id="labelV" class="sr-only">Verifiable score</span>
+      </div>
+      <div class="pillar-row" role="listitem">
+        <span class="pillar-name">Reproducible</span>
+        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelR"><div class="pillar-bar" id="barR"></div></div>
+        <span class="pillar-score" id="scoreR" aria-live="polite"></span>
+        <span id="labelR" class="sr-only">Reproducible score</span>
+      </div>
+      <div class="pillar-row" role="listitem">
+        <span class="pillar-name">Contextually Honest</span>
+        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelCH"><div class="pillar-bar" id="barCH"></div></div>
+        <span class="pillar-score" id="scoreCH" aria-live="polite"></span>
+        <span id="labelCH" class="sr-only">Contextually Honest score</span>
+      </div>
+      <div class="pillar-row" role="listitem">
+        <span class="pillar-name">Falsifiable</span>
+        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelF"><div class="pillar-bar" id="barF"></div></div>
+        <span class="pillar-score" id="scoreF" aria-live="polite"></span>
+        <span id="labelF" class="sr-only">Falsifiable score</span>
+      </div>
+    </div>
+
+    <div id="flagsBox"></div>
+    <div class="bias-box" id="biasBox"></div>
+
+    <div class="integrity-row">
+      <span>Integrity score:</span>
+      <span class="integrity-score" id="integrityScore">—</span>
+      <span id="integrityNote"></span>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ── INSTALL BANNER ── -->
+<div id="installBanner" style="display:none">
+  <style>
+    #installBanner {
+      background: var(--ink);
+      color: var(--parchment);
+      padding: 16px max(24px, 5vw);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-top: 3px solid var(--gold);
+    }
+    #installBanner .install-text { font-size: 13px; line-height: 1.6; }
+    #installBanner .install-text strong { color: var(--gold); }
+    #installBanner .install-steps {
+      font-size: 11px;
+      opacity: 0.75;
+      margin-top: 4px;
+    }
+    #installBanner .install-steps span {
+      display: inline-block;
+      background: #ffffff18;
+      border-radius: 3px;
+      padding: 2px 7px;
+      margin: 2px 2px;
+      font-family: monospace;
+      letter-spacing: 0.02em;
+    }
+    .install-btn {
+      padding: 10px 20px;
+      background: var(--gold);
+      color: var(--ink);
+      border: none;
+      border-radius: 4px;
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .install-dismiss {
+      background: none;
+      border: none;
+      color: var(--parchment);
+      opacity: 0.4;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 0 0 8px;
+      line-height: 1;
+    }
+    .install-dismiss:hover { opacity: 0.8; }
+  </style>
+  <div class="install-text">
+    <strong id="installTitle">Save Honest Abe to your phone</strong>
+    <div class="install-steps" id="installSteps"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="install-btn" id="installBtn" style="display:none">Add to Home Screen</button>
+    <button class="install-dismiss" id="installDismiss" title="Dismiss">×</button>
+  </div>
+</div>
+
+<footer id="about" role="contentinfo">
+  <strong>Honest Abe</strong> is free, open source, and runs on your device.<br>
+  No account. No tracking. No ads. No cost. Ever.<br>
+  <a href="https://github.com/voterhelptool/Honest-Abe" target="_blank" rel="noopener" aria-label="View source code on GitHub (opens in new tab)">View source on GitHub</a> ·
+  Always verify with primary sources.<br>
+  <a href="https://github.com/voterhelptool/Honest-Abe/issues" target="_blank" rel="noopener" aria-label="Report an accessibility issue on GitHub (opens in new tab)">Report an accessibility issue</a>
+</footer>
+
+<!-- Load order matters -->
+<script src="https://js.puter.com/v2/"></script>
+<script src="honest-abe/ethics.js"></script>
+<script src="honest-abe/truth-model.js"></script>
+<script src="honest-abe/hallucination-guard.js"></script>
+<script src="honest-abe/adapters/puter.js"></script>
+<script src="honest-abe/adapters/mlvoca.js"></script>
+<script src="honest-abe/adapters/huggingface.js"></script>
+<script src="honest-abe/adapters/mistral.js"></script>
+<script src="honest-abe/adapters/webllm.js"></script>
+<script src="honest-abe/adapters/pattern.js"></script>
+<script src="honest-abe/nlp.js"></script>
+<script src="honest-abe/agent.js"></script>
+<script>
+// PWA UI logic (mirrors popup.js without chrome.* APIs)
+const $ = id => document.getElementById(id);
+
+function barColor(s) {
+    return s >= 0.65 ? "#2e7d32" : s >= 0.40 ? "#f57f17" : "#c62828";
+}
+function pct(s) {
+    return typeof s === "number" ? (s * 100).toFixed(0) + "%" : "—";
+}
+function verdictClass(v) {
+    if (!v) return "unknown";
+    const u = v.toUpperCase();
+    if (u.includes("LIKELY TRUE"))  return "pass";
+    if (u.includes("PARTIALLY"))    return "warn";
+    if (u.includes("CONTESTED"))    return "warn";
+    if (u.includes("UNSUPPORTED"))  return "fail";
+    if (u.includes("BLOCKED"))      return "fail";
+    return "unknown";
+}
+
+function renderResult(result) {
+    $("results").style.display = "block";
+    const cls = verdictClass(result.verdict);
+    $("verdictBox").className      = `verdict-box ${cls}`;
+    $("verdictLabel").textContent  = result.verdict || "INCONCLUSIVE";
+    $("verdictSummary").textContent = result.summary || result.plainSummary || "";
+
+    const pillars = [
+        { bar:"barV",  score:"scoreV",  val: result.pillars?.verifiable?.score         ?? result.verifiable },
+        { bar:"barR",  score:"scoreR",  val: result.pillars?.reproducible?.score       ?? result.reproducible },
+        { bar:"barCH", score:"scoreCH", val: result.pillars?.contextuallyHonest?.score ?? result.contextuallyHonest },
+        { bar:"barF",  score:"scoreF",  val: result.pillars?.falsifiable?.score        ?? result.falsifiable },
+    ];
+    pillars.forEach(({ bar, score, val }) => {
+        const s = typeof val === "number" ? val : 0.5;
+        const pctVal = Math.round(s * 100);
+        $(bar).style.width      = pctVal + "%";
+        $(bar).style.background = barColor(s);
+        $(score).textContent    = pct(s);
+        // Update progressbar ARIA value
+        const wrap = $(bar).parentElement;
+        if (wrap) wrap.setAttribute("aria-valuenow", pctVal);
+    });
+
+    const flags = result.pillars?.contextuallyHonest?.flags ?? result.framingFlags ?? [];
+    $("flagsBox").innerHTML = flags.map(f => `<div class="flag-item">${f}</div>`).join("");
+
+    const bias = result.incentiveFlags?.join(" | ") || result.incentiveBias || null;
+    $("biasBox").style.display = bias ? "block" : "none";
+    if (bias) $("biasBox").textContent = "⚠ " + bias;
+
+    const integ = result.integrity;
+    if (integ) {
+        $("integrityScore").textContent = (integ.integrityScore * 100).toFixed(0) + "%";
+        $("integrityNote").textContent  = integ.passed ? "All 7 principles met." : `Concerns: ${integ.failures.map(f=>f.principle).join(", ")}`;
+    }
+
+    $("providerStatus").textContent = `via ${result.provider || "pattern"}`;
+}
+
+$("analyzeBtn").addEventListener("click", async () => {
+    const claim = $("claimInput").value.trim();
+    if (!claim) return;
+    $("analyzeBtn").disabled = true;
+    $("providerStatus").textContent = "Analyzing…";
+    $("results").style.display = "none";
+
+    try {
+        const nlpResult  = await nlp.analyze(claim);
+        const fullResult = TruthModel.evaluate(claim, [], { nlp: nlpResult });
+        renderResult(fullResult);
+    } catch (err) {
+        $("results").style.display   = "block";
+        $("verdictBox").className    = "verdict-box unknown";
+        $("verdictLabel").textContent  = "INCONCLUSIVE";
+        $("verdictSummary").textContent = "Analysis failed. Please verify with primary sources.";
+    } finally {
+        $("analyzeBtn").disabled = false;
+    }
+});
+
+$("claimInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("analyzeBtn").click();
+});
+
+// Register PWA service worker
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("honest-abe/sw.js").catch(() => {});
+}
+
+// ── INSTALL BANNER ────────────────────────────────────────────────────────
+(function() {
+    // Don't show if already installed as PWA
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    // Don't show if dismissed before
+    if (sessionStorage.getItem("abe-install-dismissed")) return;
+
+    const ua       = navigator.userAgent;
+    const isIOS    = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+    const isSafari = /safari/i.test(ua) && !/chrome/i.test(ua);
+    const isDDG    = /duckduckgo/i.test(ua);
+    const isFirefox = /firefox/i.test(ua);
+
+    let title = "Save Honest Abe to your phone";
+    let steps = "";
+    let showNativeBtn = false;
+
+    if (isIOS && isSafari) {
+        title = "Add Honest Abe to your iPhone";
+        steps = `Tap <span>Share ⎋</span> then <span>Add to Home Screen</span>`;
+    } else if (isIOS && !isSafari) {
+        title = "Add Honest Abe to your iPhone";
+        steps = `Open this page in <span>Safari</span>, then tap <span>Share ⎋</span> → <span>Add to Home Screen</span>`;
+    } else if (isAndroid && isDDG) {
+        title = "Save Honest Abe to your phone";
+        steps = `Tap the <span>⋮ menu</span> then <span>Add to Home Screen</span>`;
+    } else if (isAndroid && isFirefox) {
+        title = "Save Honest Abe to your phone";
+        steps = `Tap the <span>⋮ menu</span> then <span>Install</span>`;
+    } else if (isAndroid) {
+        // Chrome on Android supports native install prompt
+        showNativeBtn = true;
+        title = "Save Honest Abe to your phone";
+        steps = "Works offline after saving. No app store needed.";
+    } else if (!isIOS && !isAndroid) {
+        // Desktop — only show if Chrome/Edge (support native install)
+        const isChromium = /chrome|chromium|edg/i.test(ua) && !/opr/i.test(ua);
+        if (!isChromium) return; // don't show on desktop Firefox/Safari
+        showNativeBtn = true;
+        title = "Install Honest Abe as an app";
+        steps = "Runs offline. No browser UI. Just Honest Abe.";
+    }
+
+    // Show the banner
+    $("installTitle").textContent = title;
+    $("installSteps").innerHTML   = steps;
+    $("installBanner").style.display = "flex";
+
+    // Native install button (Chrome/Android)
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (showNativeBtn) {
+            $("installBtn").style.display = "block";
+        }
+    });
+
+    $("installBtn").addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+            $("installBanner").style.display = "none";
+        }
+        deferredPrompt = null;
+    });
+
+    $("installDismiss").addEventListener("click", () => {
+        $("installBanner").style.display = "none";
+        sessionStorage.setItem("abe-install-dismissed", "1");
+    });
+})();
+</script>
+</body>
+</html>
