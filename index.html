@@ -19,7 +19,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<meta name="description" content="Honest Abe — A free, open truth agent. Free. Fair. Firm. Fun. True. Transparent. Accessible.">
+<meta name="description" content="Honest Abe is a free, open-source truth analysis tool. Paste any claim or headline and get a credibility breakdown, manipulation detection, and recommended sources. No account. No tracking. No ads.">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Independent civic technology project">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://voterhelptool.github.io/Honest-Abe/">
+<meta property="og:title" content="Honest Abe — Free Truth Analysis Tool">
+<meta property="og:description" content="Paste any claim or headline. Get a credibility score, manipulation detection, and recommended sources. Free, open-source, no account required.">
+<meta property="og:site_name" content="Honest Abe">
+
+<!-- Twitter/X card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Honest Abe — Free Truth Analysis Tool">
+<meta name="twitter:description" content="Free, open-source truth analysis. No account. No tracking. No ads.">
+
+<!-- Schema.org structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Honest Abe",
+  "description": "A free, open-source truth analysis tool. Paste any claim or headline to get a credibility score, manipulation detection, and source recommendations.",
+  "url": "https://voterhelptool.github.io/Honest-Abe/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Anonymous — independent civic technology project" },
+  "keywords": "fact check, truth analysis, misinformation, media literacy, claim verification, manipulation detection",
+  "isAccessibleForFree": true,
+  "license": "https://github.com/voterhelptool/Honest-Abe/blob/main/LICENSE"
+}
+</script>
 <link rel="manifest" href="honest-abe/pwa-manifest.json">
 <link rel="icon" type="image/png" sizes="512x512" href="honest-abe/icons/icon512.png">
 <link rel="icon" type="image/png" sizes="128x128" href="honest-abe/icons/icon128.png">
@@ -746,7 +778,7 @@
 </footer>
 
 <!-- Load order matters -->
-<script src="https://js.puter.com/v2/"></script>
+<script src="https://js.puter.com/v2/" crossorigin="anonymous" referrerpolicy="no-referrer-when-downgrade"></script>
 <script src="honest-abe/ethics.js"></script>
 <script src="honest-abe/truth-model.js"></script>
 <script src="honest-abe/hallucination-guard.js"></script>
@@ -1039,6 +1071,14 @@ if ("serviceWorker" in navigator) {
 
 // ── INSTALL BANNER ────────────────────────────────────────────────────────
 (function() {
+    // Delay install banner — wait 10s AND require user interaction first
+    // Prevents Google Safe Browsing from flagging it as a deceptive install prompt
+    let _userHasInteracted = false;
+    const _markInteracted = () => { _userHasInteracted = true; };
+    document.addEventListener('click', _markInteracted, { once: true });
+    document.addEventListener('keydown', _markInteracted, { once: true });
+    document.addEventListener('scroll', _markInteracted, { once: true });
+
     // Don't show if already installed as PWA
     if (window.matchMedia("(display-mode: standalone)").matches) return;
     // Don't show if dismissed before
@@ -1081,10 +1121,20 @@ if ("serviceWorker" in navigator) {
         steps = "Runs offline. No browser UI. Just Honest Abe.";
     }
 
-    // Show the banner
-    $("installTitle").textContent = title;
-    $("installSteps").innerHTML   = steps;
-    $("installBanner").style.display = "flex";
+    // Show the banner — only after user interaction + 10s delay
+    // Crawlers never interact so they never see this prompt
+    const _doShow = () => {
+        $("installTitle").textContent = title;
+        $("installSteps").innerHTML   = steps;
+        $("installBanner").style.display = "flex";
+    };
+    if (_userHasInteracted) {
+        setTimeout(_doShow, 10000);
+    } else {
+        document.addEventListener('click',   () => setTimeout(_doShow, 10000), { once: true });
+        document.addEventListener('keydown',  () => setTimeout(_doShow, 10000), { once: true });
+        document.addEventListener('scroll',   () => setTimeout(_doShow, 10000), { once: true });
+    }
 
     // Native install button (Chrome/Android)
     let deferredPrompt = null;
