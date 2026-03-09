@@ -176,6 +176,192 @@
   /* ── RESULTS ── */
   #results { display: none; }
 
+
+  /* ── CONFIDENCE LABEL ── */
+  .confidence-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .conf-high     { background: #e8f5e9; color: #2e7d32; }
+  .conf-moderate { background: #fff8e1; color: #f57f17; }
+  .conf-low      { background: #fce4ec; color: #c62828; }
+  .conf-inference { background: #ede7f6; color: #4527a0; }
+
+  /* ── INFERENCE BLOCK ── */
+  .inference-block {
+    background: #1e1a2e;
+    border-left: 3px solid #7c4dff;
+    padding: 12px 16px;
+    margin: 16px 0 0 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .inference-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #9c8dce;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .inference-text { font-size: 13px; color: var(--parchment); line-height: 1.6; }
+
+  /* ── FRAME ANALYSIS ── */
+  .frame-block {
+    margin: 16px 0 0 0;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .frame-block summary {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    background: #111;
+    list-style: none;
+    user-select: none;
+  }
+  .frame-block summary::-webkit-details-marker { display: none; }
+  .frame-block summary::before { content: "▶  "; font-size: 9px; }
+  .frame-block[open] summary::before { content: "▼  "; }
+  .frame-rows { padding: 12px 14px; background: #0d0d0d; }
+  .frame-row {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid #1a1a1a;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .frame-row:last-child { border-bottom: none; }
+  .frame-key {
+    flex-shrink: 0;
+    width: 120px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-top: 1px;
+  }
+  .frame-val { color: var(--parchment); }
+
+  /* ── PREBUNK LESSON ── */
+  .prebunk-block {
+    margin: 16px 0 0 0;
+    border: 1px solid #2a2200;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .prebunk-block summary {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    cursor: pointer;
+    background: #111;
+    list-style: none;
+    user-select: none;
+  }
+  .prebunk-block summary::-webkit-details-marker { display: none; }
+  .prebunk-block summary::before { content: "▶  "; font-size: 9px; }
+  .prebunk-block[open] summary::before { content: "▼  "; }
+  .prebunk-body { padding: 12px 14px; background: #0e0c00; }
+  .prebunk-technique {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .prebunk-explanation { font-size: 13px; color: var(--parchment); line-height: 1.6; margin-bottom: 8px; }
+  .prebunk-watch {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    border-top: 1px solid #2a2200;
+    padding-top: 8px;
+  }
+  .prebunk-watch::before { content: "Next time: "; font-weight: 700; color: var(--gold); }
+
+  /* ── GAP REASON ── */
+  .gap-block {
+    margin: 16px 0 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .gap-icon { flex-shrink: 0; font-style: normal; }
+
+  /* ── PATH FORWARD ── */
+  .path-block {
+    margin: 16px 0 0 0;
+    padding: 12px 14px;
+    background: #0a0e0a;
+    border: 1px solid #1a2a1a;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--parchment);
+    line-height: 1.6;
+  }
+  .path-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4caf50;
+    margin-bottom: 6px;
+  }
+
+  /* ── SOURCES ── */
+  .sources-block { margin: 16px 0 0 0; }
+  .sources-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .source-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .source-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    text-decoration: none;
+    color: var(--parchment);
+    transition: border-color 0.15s;
+  }
+  .source-chip:hover { border-color: var(--gold); }
+  .source-chip:focus { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .lean-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #222;
+    color: var(--muted);
+  }
+
   .verdict-box {
     padding: 18px 20px;
     border-radius: 6px;
@@ -305,22 +491,6 @@
     border-color: var(--gold);
     color: var(--gold);
   }
-  .puter-callout {
-    background: #1a1a0e;
-    border-left: 3px solid var(--gold);
-    padding: 14px 18px;
-    margin: 16px 0 0 0;
-    border-radius: 0 6px 6px 0;
-    max-width: 640px;
-  }
-  .puter-callout p {
-    margin: 0;
-    font-size: 13px;
-  }
-  .puter-callout a {
-    color: var(--gold);
-    text-decoration: underline;
-  }
   footer {
     text-align: center;
     padding: 32px max(24px, 5vw);
@@ -388,11 +558,20 @@
 
   <div id="results" role="region" aria-label="Analysis results" aria-live="polite" aria-atomic="false">
 
+    <!-- Verdict -->
     <div class="verdict-box" id="verdictBox">
+      <div id="confidenceLabel"></div>
       <div class="verdict-label" id="verdictLabel"></div>
       <div class="verdict-summary" id="verdictSummary"></div>
     </div>
 
+    <!-- Educated Inference (shown only when LOW CONFIDENCE or UNVERIFIABLE) -->
+    <div id="inferenceBlock" class="inference-block" style="display:none" role="note" aria-label="Educated inference">
+      <div class="inference-label">Inference — not a verdict</div>
+      <div class="inference-text" id="inferenceText"></div>
+    </div>
+
+    <!-- Four Pillars -->
     <div class="section-label" aria-hidden="true">Four Pillars of Truth</div>
     <div class="pillars-grid" role="list" aria-label="Four Pillars of Truth scores">
       <div class="pillar-row" role="listitem">
@@ -421,13 +600,47 @@
       </div>
     </div>
 
+    <!-- Framing Flags -->
     <div id="flagsBox"></div>
     <div class="bias-box" id="biasBox"></div>
 
+    <!-- Frame Analysis (collapsible) -->
+    <details class="frame-block" id="frameBlock" style="display:none">
+      <summary>Frame Analysis</summary>
+      <div class="frame-rows" id="frameRows"></div>
+    </details>
+
+    <!-- Prebunk Lesson (collapsible) -->
+    <details class="prebunk-block" id="prebunkBlock" style="display:none">
+      <summary>Manipulation Technique Detected</summary>
+      <div class="prebunk-body">
+        <div class="prebunk-technique" id="prebunkTechnique"></div>
+        <div class="prebunk-explanation" id="prebunkExplanation"></div>
+        <div class="prebunk-watch" id="prebunkWatch"></div>
+      </div>
+    </details>
+
+    <!-- Gap Reason -->
+    <div id="gapBlock" class="gap-block" style="display:none">
+      <span class="gap-icon">◎</span>
+      <span id="gapText"></span>
+    </div>
+
+    <!-- Path Forward -->
+    <div id="pathBlock" class="path-block" style="display:none">
+      <div class="path-label">How to verify this</div>
+      <div id="pathText"></div>
+    </div>
+
+    <!-- Sources -->
+    <div id="sourcesBlock" class="sources-block" style="display:none">
+      <div class="sources-label">Check these sources</div>
+      <div class="source-chips" id="sourceChips"></div>
+    </div>
+
+    <!-- Provider -->
     <div class="integrity-row">
-      <span>Integrity score:</span>
-      <span class="integrity-score" id="integrityScore">—</span>
-      <span id="integrityNote"></span>
+      <span id="providerStatus" aria-live="polite" aria-atomic="true"></span>
     </div>
 
   </div>
@@ -502,26 +715,27 @@
 <section class="how-it-works" aria-labelledby="how-heading">
   <h2 id="how-heading">How Honest Abe Works</h2>
   <p>
-    Every claim you submit goes through a 5-step pipeline: <strong>Triage</strong> (what kind of claim is this?),
-    <strong>Claim DNA</strong> (what pieces can be verified?), <strong>Evidence Layers</strong> (language flags and known patterns),
-    <strong>Verdict</strong> (a real answer — not a dodge), and <strong>Sources</strong> (3 outlets across the political spectrum, labeled honestly).
+    Every claim goes through the same process: it's classified by type, broken into checkable pieces,
+    run through language and framing analysis, and returned with a verdict, a confidence level, and sources
+    labeled by political lean. If a manipulation technique is detected, it's named and explained — not just flagged.
+    If a verdict isn't possible, the agent says why specifically and gives its best inference rather than going silent.
   </p>
-  <p>Analysis is powered by free AI models in this order — the first one that responds wins:</p>
+  <p>
+    No account required. No data collected. Analysis runs through free AI models — the first one available responds.
+    If none are reachable, pattern matching runs locally on your device.
+  </p>
   <div class="provider-chain" role="list" aria-label="AI provider chain">
-    <span class="provider-chip" role="listitem">1. OpenRouter <span class="chip-arrow">→</span> DeepSeek R1 / Llama 3</span>
-    <span class="provider-chip" role="listitem">2. OllamaFree <span class="chip-arrow">→</span> Llama / Mistral</span>
-    <span class="provider-chip" role="listitem">3. HuggingFace <span class="chip-arrow">→</span> Open models</span>
-    <span class="provider-chip" role="listitem">4. mlvoca <span class="chip-arrow">→</span> TinyLlama</span>
-    <span class="provider-chip puter-chip" role="listitem">5. Puter ⭐</span>
-    <span class="provider-chip" role="listitem">6. Pattern matching <span class="chip-arrow">→</span> Always works offline</span>
+    <span class="provider-chip" role="listitem">OpenRouter</span>
+    <span class="provider-chip" role="listitem">OllamaFree</span>
+    <span class="provider-chip" role="listitem">HuggingFace</span>
+    <span class="provider-chip" role="listitem">mlvoca</span>
+    <span class="provider-chip puter-chip" role="listitem">Puter ⭐</span>
+    <span class="provider-chip" role="listitem">Pattern matching — always works offline</span>
   </div>
-  <div class="puter-callout" role="note">
-    <p>
-      <strong style="color:var(--gold)">Want better analysis?</strong>
-      If you have a free <a href="https://puter.com" target="_blank" rel="noopener" aria-label="Puter website (opens in new tab)">Puter</a>
-      account and are signed in, Honest Abe will use it automatically. No cost to you.
-    </p>
-  </div>
+  <p style="margin-top:14px;font-size:13px;">
+    ⭐ <a href="https://puter.com" target="_blank" rel="noopener" aria-label="Puter website (opens in new tab)" style="color:var(--gold)">Puter</a>
+    — if you have a free account and are signed in, Honest Abe will use it automatically.
+  </p>
 </section>
 
 <footer id="about" role="contentinfo">
@@ -560,26 +774,58 @@ function pct(s) {
 function verdictClass(v) {
     if (!v) return "unknown";
     const u = v.toUpperCase();
-    if (u.includes("LIKELY TRUE"))  return "pass";
-    if (u.includes("PARTIALLY"))    return "warn";
-    if (u.includes("CONTESTED"))    return "warn";
-    if (u.includes("UNSUPPORTED"))  return "fail";
-    if (u.includes("BLOCKED"))      return "fail";
+    if (u === "TRUE")                return "pass";
+    if (u === "MOSTLY TRUE")         return "pass";
+    if (u === "MISLEADING")          return "warn";
+    if (u === "MOSTLY FALSE")        return "fail";
+    if (u === "FALSE")               return "fail";
+    if (u === "OPINION")             return "warn";
+    if (u === "UNVERIFIABLE")        return "unknown";
+    if (u === "LOW CONFIDENCE")      return "unknown";
     return "unknown";
 }
 
+const GAP_LABELS = {
+    PRIMARY_SOURCE_MISSING:  "No primary source exists for this claim.",
+    TOO_VAGUE:               "This claim is too vague to fact-check specifically.",
+    TIME_SENSITIVE:          "This claim may change over time — check for the most recent data.",
+    OPINION_AS_FACT:         "This appears to be an opinion presented as a factual claim.",
+    UNFALSIFIABLE_BY_DESIGN: "This claim is constructed so that no evidence could disprove it.",
+    CONTESTED_EVIDENCE:      "Evidence on this claim is genuinely contested among experts.",
+};
+
 function renderResult(result) {
     $("results").style.display = "block";
-    const cls = verdictClass(result.verdict);
-    $("verdictBox").className      = `verdict-box ${cls}`;
-    $("verdictLabel").textContent  = result.verdict || "INCONCLUSIVE";
-    $("verdictSummary").textContent = result.summary || result.plainSummary || "";
 
+    // ── VERDICT ──
+    const cls = verdictClass(result.verdict);
+    $("verdictBox").className     = `verdict-box ${cls}`;
+    $("verdictLabel").textContent = result.verdict || "UNVERIFIABLE";
+    $("verdictSummary").textContent = result.plainSummary || result.summary || "";
+
+    // ── CONFIDENCE LABEL ──
+    const cl = (result.confidenceLabel || "").toUpperCase();
+    const confEl = $("confidenceLabel");
+    const confMap = {
+        "HIGH":           ["HIGH CONFIDENCE",  "conf-high"],
+        "MODERATE":       ["MODERATE",         "conf-moderate"],
+        "LOW":            ["LOW CONFIDENCE",   "conf-low"],
+        "INFERENCE ONLY": ["INFERENCE ONLY",   "conf-inference"],
+    };
+    if (cl && confMap[cl]) {
+        confEl.textContent  = confMap[cl][0];
+        confEl.className    = `confidence-label ${confMap[cl][1]}`;
+        confEl.style.display = "inline-block";
+    } else {
+        confEl.style.display = "none";
+    }
+
+    // ── PILLARS ──
     const pillars = [
-        { bar:"barV",  score:"scoreV",  val: result.pillars?.verifiable?.score         ?? result.verifiable },
-        { bar:"barR",  score:"scoreR",  val: result.pillars?.reproducible?.score       ?? result.reproducible },
-        { bar:"barCH", score:"scoreCH", val: result.pillars?.contextuallyHonest?.score ?? result.contextuallyHonest },
-        { bar:"barF",  score:"scoreF",  val: result.pillars?.falsifiable?.score        ?? result.falsifiable },
+        { bar:"barV",  score:"scoreV",  val: result.pillars?.verifiable         ?? result.verifiable },
+        { bar:"barR",  score:"scoreR",  val: result.pillars?.reproducible       ?? result.reproducible },
+        { bar:"barCH", score:"scoreCH", val: result.pillars?.contextuallyHonest ?? result.contextuallyHonest },
+        { bar:"barF",  score:"scoreF",  val: result.pillars?.falsifiable        ?? result.falsifiable },
     ];
     pillars.forEach(({ bar, score, val }) => {
         const s = typeof val === "number" ? val : 0.5;
@@ -587,42 +833,109 @@ function renderResult(result) {
         $(bar).style.width      = pctVal + "%";
         $(bar).style.background = barColor(s);
         $(score).textContent    = pct(s);
-        // Update progressbar ARIA value
         const wrap = $(bar).parentElement;
         if (wrap) wrap.setAttribute("aria-valuenow", pctVal);
     });
 
-    const flags = result.pillars?.contextuallyHonest?.flags ?? result.framingFlags ?? [];
+    // ── FRAMING FLAGS ──
+    const flags = result.framingFlags ?? [];
     $("flagsBox").innerHTML = flags.map(f => `<div class="flag-item">${f}</div>`).join("");
 
-    const bias = result.incentiveFlags?.join(" | ") || result.incentiveBias || null;
+    // ── INCENTIVE BIAS ──
+    const bias = result.incentiveBias || null;
     $("biasBox").style.display = bias ? "block" : "none";
     if (bias) $("biasBox").textContent = "⚠ " + bias;
 
-    const integ = result.integrity;
-    if (integ) {
-        $("integrityScore").textContent = (integ.integrityScore * 100).toFixed(0) + "%";
-        $("integrityNote").textContent  = integ.passed ? "All 7 principles met." : `Concerns: ${integ.failures.map(f=>f.principle).join(", ")}`;
+    // ── EDUCATED INFERENCE ──
+    const inf = result.educatedInference;
+    const showInf = inf && (result.verdict === "UNVERIFIABLE" || result.verdict === "LOW CONFIDENCE" || cl === "INFERENCE ONLY" || cl === "LOW");
+    $("inferenceBlock").style.display = showInf ? "block" : "none";
+    if (showInf) $("inferenceText").textContent = inf;
+
+    // ── FRAME ANALYSIS ──
+    const fa = result.frameAnalysis;
+    const frameEl = $("frameBlock");
+    if (fa && Object.values(fa).some(v => v)) {
+        const labels = {
+            problemDefined: "Problem",
+            blameAssigned:  "Blame",
+            moralJudgment:  "Moral judgment",
+            remedyImplied:  "Implied remedy",
+        };
+        $("frameRows").innerHTML = Object.entries(fa)
+            .filter(([, v]) => v)
+            .map(([k, v]) => `<div class="frame-row"><span class="frame-key">${labels[k] || k}</span><span class="frame-val">${v}</span></div>`)
+            .join("");
+        frameEl.style.display = "block";
+    } else {
+        frameEl.style.display = "none";
     }
 
-    $("providerStatus").textContent = `via ${result.provider || "pattern"}`;
+    // ── PREBUNK LESSON ──
+    const pb = result.prebunkLesson;
+    const pbEl = $("prebunkBlock");
+    if (pb?.technique) {
+        $("prebunkTechnique").textContent   = pb.technique;
+        $("prebunkExplanation").textContent = pb.explanation || "";
+        $("prebunkWatch").textContent       = pb.watchFor || "";
+        pbEl.style.display = "block";
+    } else {
+        pbEl.style.display = "none";
+    }
+
+    // ── GAP REASON ──
+    const gap = result.gapReason;
+    const gapEl = $("gapBlock");
+    if (gap && GAP_LABELS[gap]) {
+        $("gapText").textContent = GAP_LABELS[gap];
+        gapEl.style.display = "flex";
+    } else {
+        gapEl.style.display = "none";
+    }
+
+    // ── PATH FORWARD ──
+    const path = result.pathForward;
+    const pathEl = $("pathBlock");
+    if (path) {
+        $("pathText").textContent = path;
+        pathEl.style.display = "block";
+    } else {
+        pathEl.style.display = "none";
+    }
+
+    // ── SOURCES ──
+    const sources = result.sources || [];
+    const srcEl = $("sourcesBlock");
+    if (sources.length) {
+        $("sourceChips").innerHTML = sources.map(s =>
+            `<a class="source-chip" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} — ${s.lean} (opens in new tab)">
+                ${s.name}
+                <span class="lean-badge">${s.lean}</span>
+            </a>`
+        ).join("");
+        srcEl.style.display = "block";
+    } else {
+        srcEl.style.display = "none";
+    }
+
+    // ── PROVIDER ──
+    $("providerStatus").textContent = `Analyzed via ${result.provider || "pattern matching"}`;
 }
 
 $("analyzeBtn").addEventListener("click", async () => {
     const claim = $("claimInput").value.trim();
     if (!claim) return;
     $("analyzeBtn").disabled = true;
-    $("providerStatus").textContent = "Analyzing…";
+    $("providerStatus").textContent = "";
     $("results").style.display = "none";
 
     try {
-        const nlpResult  = await nlp.analyze(claim);
-        const fullResult = TruthModel.evaluate(claim, [], { nlp: nlpResult });
-        renderResult(fullResult);
+        const result = await nlp.analyze(claim);
+        renderResult(result);
     } catch (err) {
-        $("results").style.display   = "block";
-        $("verdictBox").className    = "verdict-box unknown";
-        $("verdictLabel").textContent  = "INCONCLUSIVE";
+        $("results").style.display      = "block";
+        $("verdictBox").className       = "verdict-box unknown";
+        $("verdictLabel").textContent   = "UNVERIFIABLE";
         $("verdictSummary").textContent = "Analysis failed. Please verify with primary sources.";
     } finally {
         $("analyzeBtn").disabled = false;
