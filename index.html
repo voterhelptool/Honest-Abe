@@ -284,6 +284,15 @@
     margin-bottom: 6px;
   }
   .prebunk-explanation { font-size: 13px; color: var(--parchment); line-height: 1.6; margin-bottom: 8px; }
+  .prebunk-ask {
+    font-size: 12px;
+    color: #b0a060;
+    line-height: 1.6;
+    border-top: 1px solid #2a2200;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .prebunk-ask::before { content: "Ask yourself: "; font-weight: 700; color: var(--gold); }
   .prebunk-watch {
     font-size: 12px;
     color: var(--muted);
@@ -617,6 +626,7 @@
         <div class="prebunk-technique" id="prebunkTechnique"></div>
         <div class="prebunk-explanation" id="prebunkExplanation"></div>
         <div class="prebunk-watch" id="prebunkWatch"></div>
+        <div class="prebunk-ask" id="prebunkAsk" style="display:none"></div>
       </div>
     </details>
 
@@ -875,9 +885,15 @@ function renderResult(result) {
     const pb = result.prebunkLesson;
     const pbEl = $("prebunkBlock");
     if (pb?.technique) {
-        $("prebunkTechnique").textContent   = pb.technique;
+        $("prebunkTechnique").textContent   = pb.technique + (pb.category ? ` — ${pb.category}` : "");
         $("prebunkExplanation").textContent = pb.explanation || "";
         $("prebunkWatch").textContent       = pb.watchFor || "";
+        // askYourself
+        const ayEl = $("prebunkAsk");
+        if (ayEl) {
+            ayEl.textContent    = pb.askYourself || "";
+            ayEl.style.display  = pb.askYourself ? "block" : "none";
+        }
         pbEl.style.display = "block";
     } else {
         pbEl.style.display = "none";
