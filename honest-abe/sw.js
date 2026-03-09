@@ -2,23 +2,24 @@
  * HONEST ABE — sw.js
  * Service worker for PWA offline support.
  * Core files cached on install. Pattern matching works offline always.
+ * Note: SW is at /honest-abe/sw.js, so paths are relative to /honest-abe/
  */
 
-const CACHE    = "honest-abe-v1";
+const CACHE    = "honest-abe-v2";
 const PRECACHE = [
-    "/",
-    "/index.html",
-    "/ethics.js",
-    "/truth-model.js",
-    "/hallucination-guard.js",
-    "/nlp.js",
-    "/agent.js",
-    "/adapters/pattern.js",
-    "/adapters/puter.js",
-    "/adapters/mlvoca.js",
-    "/adapters/huggingface.js",
-    "/adapters/mistral.js",
-    "/adapters/webllm.js",
+    "/Honest-Abe/",
+    "/Honest-Abe/index.html",
+    "/Honest-Abe/honest-abe/ethics.js",
+    "/Honest-Abe/honest-abe/truth-model.js",
+    "/Honest-Abe/honest-abe/hallucination-guard.js",
+    "/Honest-Abe/honest-abe/nlp.js",
+    "/Honest-Abe/honest-abe/agent.js",
+    "/Honest-Abe/honest-abe/adapters/pattern.js",
+    "/Honest-Abe/honest-abe/adapters/mlvoca.js",
+    "/Honest-Abe/honest-abe/adapters/huggingface.js",
+    "/Honest-Abe/honest-abe/adapters/mistral.js",
+    "/Honest-Abe/honest-abe/adapters/webllm.js",
+    "/Honest-Abe/honest-abe/icons/icon512.png",
 ];
 
 self.addEventListener("install", e => {
