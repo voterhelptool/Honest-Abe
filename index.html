@@ -391,70 +391,66 @@
   .verdict-summary { font-size: 13px; line-height: 1.7; opacity: 0.85; }
 
   /* ── PILLARS ── */
-  .pillars-grid { margin-bottom: 20px; }
-  .pillar-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 10px;
-    font-size: 13px;
+  /* ── Credibility Index ── */
+  #credibility-index { margin-bottom: 18px; }
+  .ci-thermo-wrap { display:flex; align-items:flex-start; gap:14px; margin-bottom:10px; }
+  .ci-thermo-outer {
+    width:26px; height:110px; background:rgba(255,255,255,.1);
+    border-radius:13px; position:relative; overflow:hidden; flex-shrink:0;
+    box-shadow:inset 0 2px 5px rgba(0,0,0,.3);
   }
-  .pillar-name { width: 160px; flex-shrink: 0; }
-  .pillar-bar-wrap {
-    flex: 1;
-    height: 8px;
-    background: #e0dbd0;
-    border-radius: 4px;
-    overflow: hidden;
+  .ci-thermo-fill {
+    position:absolute; bottom:0; left:0; right:0; height:0%;
+    border-radius:13px;
+    background:linear-gradient(to top,#c62828,#f57c00,#fdd835,#388e3c);
+    transition:height 0.9s cubic-bezier(.22,1,.36,1);
   }
-  .pillar-bar {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.7s ease;
-  }
-  .pillar-score { width: 36px; text-align: right; font-size: 11px; color: var(--muted); }
+  .ci-thermo-label { font-size:9px; color:var(--muted); text-align:center; margin-top:4px; letter-spacing:.05em; }
+  .ci-score-pct { font-size:1.5rem; font-weight:800; color:var(--ink); margin-bottom:8px; letter-spacing:-.02em; }
+  .ci-dims { display:flex; flex-direction:column; gap:5px; }
+  .ci-dim-row { display:grid; grid-template-columns:118px 1fr 32px; align-items:center; gap:6px; }
+  .ci-dim-label { font-size:11px; color:var(--muted); }
+  .ci-dim-track { height:6px; background:rgba(255,255,255,.12); border-radius:3px; overflow:hidden; }
+  .ci-dim-bar { height:100%; border-radius:3px; width:0%; background:linear-gradient(to right,#c62828,#388e3c); transition:width 0.8s cubic-bezier(.22,1,.36,1); }
+  .ci-dim-pct { font-size:10px; color:var(--muted); text-align:right; }
 
-  /* ── FLAGS + BIAS ── */
-  .flag-item {
-    display: flex;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--amber);
-    margin-bottom: 5px;
-    line-height: 1.5;
+  /* ── Neutral Restatement ── */
+  .neutral-block {
+    background:rgba(255,255,255,.04); border-left:3px solid rgba(255,255,255,.2);
+    padding:10px 12px; border-radius:0 5px 5px 0; margin-bottom:14px;
   }
-  .flag-item::before { content: "⚠"; flex-shrink: 0; }
+  .neutral-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:5px; }
 
-  .bias-box {
-    margin-top: 14px;
-    padding: 10px 14px;
-    background: #fff3e0;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #e65100;
-    line-height: 1.6;
-    display: none;
-  }
+  /* ── Manipulation Detection ── */
+  .manip-block { margin-bottom:14px; }
+  .manip-header { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+  .manip-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .manip-score-pill { font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; }
+  .manip-score-pill.low    { background:rgba(56,142,60,.2);  color:#81c784; }
+  .manip-score-pill.medium { background:rgba(245,124,0,.2);  color:#ffb74d; }
+  .manip-score-pill.high   { background:rgba(198,40,40,.2);  color:#ef9a9a; }
+  .manip-technique { font-size:12px; color:var(--muted); padding:3px 0 3px 10px; border-left:2px solid rgba(245,124,0,.4); margin-bottom:4px; }
+  .manip-none { font-size:12px; color:#81c784; }
 
-  /* ── INTEGRITY ── */
-  .integrity-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--muted);
+  /* ── Civic Banner ── */
+  #abe-civic-banner {
+    display:none; flex-wrap:wrap; gap:5px 8px; align-items:center;
+    background:rgba(56,142,60,.12); border:1px solid rgba(56,142,60,.3);
+    border-radius:6px; padding:8px 12px; margin-bottom:12px;
+    font-size:12px; color:#a5d6a7; line-height:1.5;
   }
-  .integrity-score {
-    font-family: 'Playfair Display', serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--ink);
-  }
-
-  /* ── FOOTER ── */
+  #abe-civic-banner.visible { display:flex; }
+  .abe-banner-rep { font-weight:700; color:#c8e6c9; }
+  .abe-banner-divider { color:rgba(165,214,167,.4); }
+  .abe-banner-provider { display:inline-flex; align-items:center; gap:4px; font-size:11px; }
+  .abe-banner-provider-dot { width:7px; height:7px; border-radius:50%; background:#666; flex-shrink:0; }
+  .abe-banner-provider-dot.puter   { background:#4caf50; }
+  .abe-banner-provider-dot.gemini  { background:#4285f4; }
+  .abe-banner-provider-dot.groq    { background:#ff6d00; }
+  .abe-banner-provider-dot.pattern { background:#9e9e9e; }
+  .abe-banner-privacy { font-size:11px; color:#81c784; text-decoration:underline; text-underline-offset:2px; }
+  .abe-banner-nostore { font-size:11px; color:#66bb6a; }
+  .abe-civic-clear { margin-left:auto; background:none; border:none; color:#4caf50; font-size:11px; cursor:pointer; text-decoration:underline; padding:0; font-family:inherit; }
   .how-it-works {
     background: #111;
     border-top: 2px solid var(--gold);
@@ -557,6 +553,21 @@
 
   <div class="input-section">
     <label for="claimInput" class="section-label">Submit a claim for analysis</label>
+    <!-- Civic context banner (shown when ?rep= param present) -->
+    <div id="abe-civic-banner" role="status" aria-live="polite">
+      <span>🏛</span>
+      <span id="abe-civic-banner-rep" class="abe-banner-rep"></span>
+      <span class="abe-banner-divider">·</span>
+      <span class="abe-banner-provider">
+        <span class="abe-banner-provider-dot" id="abe-provider-dot"></span>
+        <span id="abe-provider-name">Waiting for analysis…</span>
+      </span>
+      <span class="abe-banner-divider">·</span>
+      <a class="abe-banner-privacy" id="abe-privacy-link" href="#" target="_blank" rel="noopener">Provider privacy policy</a>
+      <span class="abe-banner-divider">·</span>
+      <span class="abe-banner-nostore">🔒 No data stored</span>
+      <button class="abe-civic-clear" onclick="clearCivicContext()">✕ Clear</button>
+    </div>
     <textarea id="claimInput" placeholder="Paste or type any claim, headline, or statement you'd like Honest Abe to evaluate…" aria-describedby="claimHint" rows="4"></textarea>
     <div id="claimHint" style="font-size:13px;color:var(--muted);margin-top:6px;">Press Ctrl+Enter to analyze.</div>
     <div class="btn-row">
@@ -580,55 +591,41 @@
       <div class="inference-text" id="inferenceText"></div>
     </div>
 
-    <!-- Four Pillars -->
-    <div class="section-label" aria-hidden="true">Four Pillars of Truth</div>
-    <div class="pillars-grid" role="list" aria-label="Four Pillars of Truth scores">
-      <div class="pillar-row" role="listitem">
-        <span class="pillar-name">Verifiable</span>
-        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelV"><div class="pillar-bar" id="barV"></div></div>
-        <span class="pillar-score" id="scoreV" aria-live="polite"></span>
-        <span id="labelV" class="sr-only">Verifiable score</span>
+    <!-- Credibility Index -->
+    <div class="section-label" aria-hidden="true">Credibility Index</div>
+    <div id="credibility-index">
+      <div class="ci-thermo-wrap">
+        <div>
+          <div class="ci-thermo-outer">
+            <div class="ci-thermo-fill" id="ci-fill"></div>
+          </div>
+          <div class="ci-thermo-label">CREDIB.</div>
+        </div>
+        <div style="flex:1">
+          <div class="ci-score-pct" id="ci-score-pct">—</div>
+          <div class="ci-dims" id="ci-dims"></div>
+        </div>
       </div>
-      <div class="pillar-row" role="listitem">
-        <span class="pillar-name">Reproducible</span>
-        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelR"><div class="pillar-bar" id="barR"></div></div>
-        <span class="pillar-score" id="scoreR" aria-live="polite"></span>
-        <span id="labelR" class="sr-only">Reproducible score</span>
+    </div>
+
+    <!-- Neutral Restatement -->
+    <div id="neutralBlock" class="neutral-block" style="display:none">
+      <div class="neutral-label">Neutral Restatement</div>
+      <div id="neutralText"></div>
+    </div>
+
+    <!-- Manipulation Detection -->
+    <div id="manipBlock" class="manip-block" style="display:none">
+      <div class="manip-header">
+        <span class="manip-label">Manipulation Detection</span>
+        <span class="manip-score-pill" id="manipPill"></span>
       </div>
-      <div class="pillar-row" role="listitem">
-        <span class="pillar-name">Contextually Honest</span>
-        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelCH"><div class="pillar-bar" id="barCH"></div></div>
-        <span class="pillar-score" id="scoreCH" aria-live="polite"></span>
-        <span id="labelCH" class="sr-only">Contextually Honest score</span>
-      </div>
-      <div class="pillar-row" role="listitem">
-        <span class="pillar-name">Falsifiable</span>
-        <div class="pillar-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-labelledby="labelF"><div class="pillar-bar" id="barF"></div></div>
-        <span class="pillar-score" id="scoreF" aria-live="polite"></span>
-        <span id="labelF" class="sr-only">Falsifiable score</span>
-      </div>
+      <div id="manipTechniques"></div>
     </div>
 
     <!-- Framing Flags -->
     <div id="flagsBox"></div>
     <div class="bias-box" id="biasBox"></div>
-
-    <!-- Frame Analysis (collapsible) -->
-    <details class="frame-block" id="frameBlock" style="display:none">
-      <summary>Frame Analysis</summary>
-      <div class="frame-rows" id="frameRows"></div>
-    </details>
-
-    <!-- Prebunk Lesson (collapsible) -->
-    <details class="prebunk-block" id="prebunkBlock" style="display:none">
-      <summary>Manipulation Technique Detected</summary>
-      <div class="prebunk-body">
-        <div class="prebunk-technique" id="prebunkTechnique"></div>
-        <div class="prebunk-explanation" id="prebunkExplanation"></div>
-        <div class="prebunk-watch" id="prebunkWatch"></div>
-        <div class="prebunk-ask" id="prebunkAsk" style="display:none"></div>
-      </div>
-    </details>
 
     <!-- Gap Reason -->
     <div id="gapBlock" class="gap-block" style="display:none">
@@ -822,22 +819,35 @@ function renderResult(result) {
         confEl.style.display = "none";
     }
 
-    // ── PILLARS ──
-    const pillars = [
-        { bar:"barV",  score:"scoreV",  val: result.pillars?.verifiable         ?? result.verifiable },
-        { bar:"barR",  score:"scoreR",  val: result.pillars?.reproducible       ?? result.reproducible },
-        { bar:"barCH", score:"scoreCH", val: result.pillars?.contextuallyHonest ?? result.contextuallyHonest },
-        { bar:"barF",  score:"scoreF",  val: result.pillars?.falsifiable        ?? result.falsifiable },
-    ];
-    pillars.forEach(({ bar, score, val }) => {
-        const s = typeof val === "number" ? val : 0.5;
-        const pctVal = Math.round(s * 100);
-        $(bar).style.width      = pctVal + "%";
-        $(bar).style.background = barColor(s);
-        $(score).textContent    = pct(s);
-        const wrap = $(bar).parentElement;
-        if (wrap) wrap.setAttribute("aria-valuenow", pctVal);
-    });
+    // ── CREDIBILITY INDEX ──
+    renderCredibilityIndex(result);
+
+    // ── NEUTRAL RESTATEMENT ──
+    const neutral = result.neutralRestatement;
+    const neutralEl = $("neutralBlock");
+    if (neutral) {
+        $("neutralText").textContent = neutral;
+        neutralEl.style.display = "block";
+    } else {
+        neutralEl.style.display = "none";
+    }
+
+    // ── MANIPULATION DETECTION ──
+    const techniques = result.manipulationTechniques || [];
+    const manipEl = $("manipBlock");
+    if (techniques.length || result.manipulationScore > 0) {
+        const ms = result.manipulationScore ?? 0;
+        const msPct = Math.round(ms * 100);
+        const pill = $("manipPill");
+        pill.textContent = msPct < 20 ? "Low risk" : msPct < 55 ? "Medium risk" : "High risk";
+        pill.className = "manip-score-pill " + (msPct < 20 ? "low" : msPct < 55 ? "medium" : "high");
+        $("manipTechniques").innerHTML = techniques.length
+            ? techniques.map(t => `<div class="manip-technique">⚠ ${t}</div>`).join("")
+            : `<div class="manip-none">No manipulation techniques detected.</div>`;
+        manipEl.style.display = "block";
+    } else {
+        manipEl.style.display = "none";
+    }
 
     // ── FRAMING FLAGS ──
     const flags = result.framingFlags ?? [];
@@ -853,43 +863,6 @@ function renderResult(result) {
     const showInf = inf && (result.verdict === "UNVERIFIABLE" || result.verdict === "LOW CONFIDENCE" || cl === "INFERENCE ONLY" || cl === "LOW");
     $("inferenceBlock").style.display = showInf ? "block" : "none";
     if (showInf) $("inferenceText").textContent = inf;
-
-    // ── FRAME ANALYSIS ──
-    const fa = result.frameAnalysis;
-    const frameEl = $("frameBlock");
-    if (fa && Object.values(fa).some(v => v)) {
-        const labels = {
-            problemDefined: "Problem",
-            blameAssigned:  "Blame",
-            moralJudgment:  "Moral judgment",
-            remedyImplied:  "Implied remedy",
-        };
-        $("frameRows").innerHTML = Object.entries(fa)
-            .filter(([, v]) => v)
-            .map(([k, v]) => `<div class="frame-row"><span class="frame-key">${labels[k] || k}</span><span class="frame-val">${v}</span></div>`)
-            .join("");
-        frameEl.style.display = "block";
-    } else {
-        frameEl.style.display = "none";
-    }
-
-    // ── PREBUNK LESSON ──
-    const pb = result.prebunkLesson;
-    const pbEl = $("prebunkBlock");
-    if (pb?.technique) {
-        $("prebunkTechnique").textContent   = pb.technique + (pb.category ? ` — ${pb.category}` : "");
-        $("prebunkExplanation").textContent = pb.explanation || "";
-        $("prebunkWatch").textContent       = pb.watchFor || "";
-        // askYourself
-        const ayEl = $("prebunkAsk");
-        if (ayEl) {
-            ayEl.textContent    = pb.askYourself || "";
-            ayEl.style.display  = pb.askYourself ? "block" : "none";
-        }
-        pbEl.style.display = "block";
-    } else {
-        pbEl.style.display = "none";
-    }
 
     // ── GAP REASON ──
     const gap = result.gapReason;
@@ -930,16 +903,121 @@ function renderResult(result) {
     $("providerStatus").textContent = `Analyzed via ${result.provider || "pattern matching"}`;
 }
 
+// ── Credibility Index renderer ───────────────────────────────────────────
+function renderCredibilityIndex(result) {
+    const score = result.credibilityScore ?? 0.5;
+    const pctVal = Math.round(score * 100);
+    // Thermometer — slight delay so CSS transition fires
+    requestAnimationFrame(() => {
+        setTimeout(() => { $("ci-fill").style.height = pctVal + "%"; }, 60);
+    });
+    $("ci-score-pct").textContent = pctVal + "%";
+
+    const DIM_LABELS = {
+        sourceQuality:    "Source Quality",
+        corroboration:    "Corroboration",
+        contextIntegrity: "Context Integrity",
+        logicalSoundness: "Logical Soundness",
+        falsifiability:   "Falsifiability",
+        transparency:     "Transparency",
+    };
+    const dimsEl = $("ci-dims");
+    dimsEl.innerHTML = "";
+    if (result.dimensions) {
+        Object.entries(DIM_LABELS).forEach(([key, label]) => {
+            const val = result.dimensions[key] ?? 0.5;
+            const vpct = Math.round(val * 100);
+            const row = document.createElement("div");
+            row.className = "ci-dim-row";
+            row.innerHTML = `<div class="ci-dim-label">${label}</div>
+                <div class="ci-dim-track"><div class="ci-dim-bar" data-pct="${vpct}"></div></div>
+                <div class="ci-dim-pct">${vpct}%</div>`;
+            dimsEl.appendChild(row);
+        });
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                dimsEl.querySelectorAll(".ci-dim-bar").forEach(b => { b.style.width = b.dataset.pct + "%"; });
+            }, 80);
+        });
+    }
+}
+
+function resetCredibilityIndex() {
+    const fill = $("ci-fill");
+    if (fill) fill.style.height = "0%";
+    document.querySelectorAll(".ci-dim-bar").forEach(b => b.style.width = "0%");
+    $("ci-score-pct").textContent = "—";
+    $("neutralBlock").style.display = "none";
+    $("manipBlock").style.display = "none";
+}
+
+// ── Civic context (from ?rep= URL param — MN Civic Profile handoff) ──────
+const ABE_PROVIDER_META = {
+    "Puter.js": { label:"Puter (no account, no logging)",        dotClass:"puter",   privacyUrl:"https://puter.com/privacy" },
+    "Gemini":   { label:"Google Gemini — query sent to Google",  dotClass:"gemini",  privacyUrl:"https://policies.google.com/privacy" },
+    "Groq":     { label:"Groq (Llama 3.1) — query sent to Groq", dotClass:"groq",    privacyUrl:"https://groq.com/privacy-policy/" },
+    "pattern":  { label:"Offline pattern scan — no AI used",     dotClass:"pattern", privacyUrl:"#" },
+};
+
+(function loadCivicContextFromURL() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get("rep");
+        if (!raw) return;
+        const rep = JSON.parse(decodeURIComponent(raw));
+        if (!rep?.name) return;
+        window._abeLoadedCivicContext = rep;
+        const banner = $("abe-civic-banner");
+        const repSpan = $("abe-civic-banner-rep");
+        if (banner && repSpan) {
+            repSpan.textContent = `${rep.name} · ${rep.party || "?"} · ${rep.state || "MN"}${rep.district ? " " + rep.district : ""}`;
+            banner.classList.add("visible");
+        }
+        // Pre-fill textarea with a starting prompt
+        const input = $("claimInput");
+        if (input && !input.value) {
+            input.placeholder = `Enter a claim about ${rep.name} to analyze…`;
+        }
+        window.history.replaceState({}, "", window.location.pathname);
+        console.log("[Honest Abe] Civic context loaded:", rep.name);
+    } catch(e) {
+        console.warn("[Honest Abe] Could not parse rep context:", e.message);
+    }
+})();
+
+function updateCivicBannerProvider() {
+    const banner = $("abe-civic-banner");
+    if (!banner || !banner.classList.contains("visible")) return;
+    const providerName = (typeof nlp !== "undefined" && nlp?.audit?.()?.activeProvider) || "pattern";
+    const meta = ABE_PROVIDER_META[providerName] || ABE_PROVIDER_META["pattern"];
+    const dot  = $("abe-provider-dot");
+    const name = $("abe-provider-name");
+    const link = $("abe-privacy-link");
+    if (dot)  dot.className = "abe-banner-provider-dot " + meta.dotClass;
+    if (name) name.textContent = meta.label;
+    if (link) link.href = meta.privacyUrl;
+}
+
+function clearCivicContext() {
+    window._abeLoadedCivicContext = null;
+    const banner = $("abe-civic-banner");
+    if (banner) banner.classList.remove("visible");
+}
+
 $("analyzeBtn").addEventListener("click", async () => {
     const claim = $("claimInput").value.trim();
     if (!claim) return;
     $("analyzeBtn").disabled = true;
     $("providerStatus").textContent = "";
     $("results").style.display = "none";
+    resetCredibilityIndex();
 
     try {
-        const result = await nlp.analyze(claim);
+        const result = await nlp.analyze(claim, {
+            civic: window._abeLoadedCivicContext || null
+        });
         renderResult(result);
+        updateCivicBannerProvider();
     } catch (err) {
         $("results").style.display      = "block";
         $("verdictBox").className       = "verdict-box unknown";
