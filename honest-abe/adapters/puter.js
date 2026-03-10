@@ -11,15 +11,18 @@ const PuterAdapter = {
         if (typeof puter === "undefined" || typeof puter.ai?.chat !== "function") return false;
         try {
             const signedIn = await puter.auth.isSignedIn();
-            return !!signedIn;
+            if (signedIn) return true;
+            // Not signed in — trigger sign-in popup and WAIT for it
+            await puter.auth.signIn();
+            // Verify it actually worked
+            return !!(await puter.auth.isSignedIn());
         } catch(e) {
+            // User closed popup or auth failed — fall through to next provider
             return false;
         }
     },
 
     async query(prompt) {
-        const signedIn = await puter.auth.isSignedIn();
-        if (!signedIn) await puter.auth.signIn();
         const response = await puter.ai.chat(prompt, {
             model: "claude-sonnet-4-6",
         });
