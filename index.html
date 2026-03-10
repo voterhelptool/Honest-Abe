@@ -979,6 +979,7 @@ function verdictClass(v) {
     const u = v.toUpperCase();
     if (u === "TRUE")                          return "pass";
     if (u === "MOSTLY TRUE")                   return "pass";
+    if (u === "ANSWERED")                      return "pass";
     if (u === "MISLEADING")                    return "warn";
     if (u === "MOSTLY FALSE")                  return "fail";
     if (u === "FACTUALLY TRUE / MORALLY DISPUTED") return "warn";
@@ -1008,9 +1009,10 @@ function renderResult(result) {
     $("verdictLabel").textContent = result.verdict || "UNVERIFIABLE";
     $("verdictSummary").textContent = result.plainSummary || result.summary || "";
 
-    // REFUSED — hide credibility index, meaningless for non-claims
+    // REFUSED or ANSWERED — hide credibility index, meaningless for non-claims
     const isRefused = result.verdict === "REFUSED";
-    $("credibility-index").style.display = isRefused ? "none" : "block";
+    const isAnswered = result.verdict === "ANSWERED";
+    $("credibility-index").style.display = (isRefused || isAnswered) ? "none" : "block";
 
     // ── CONFIDENCE LABEL ──
     const cl = (result.confidenceLabel || "").toUpperCase();
@@ -1055,7 +1057,7 @@ function renderResult(result) {
     // ── MANIPULATION DETECTION ──
     const techniques = result.manipulationTechniques || [];
     const manipEl = $("manipBlock");
-    if (techniques.length || result.manipulationScore > 0) {
+    if (!isAnswered && (techniques.length || result.manipulationScore > 0)) {
         const ms = result.manipulationScore ?? 0;
         const msPct = Math.round(ms * 100);
         const pill = $("manipPill");
@@ -1477,7 +1479,7 @@ function renderActionBlock(claim, verdict, result) {
     if (!actionEl) return;
 
     // Don't show for REFUSED or truly unanalyzable claims
-    if (verdict === "REFUSED") { actionEl.style.display = "none"; return; }
+    if (verdict === "REFUSED" || verdict === "ANSWERED") { actionEl.style.display = "none"; return; }
 
     // Don't show if claim is too short or vague to be civic
     const words = (claim || "").trim().split(/\s+/).length;
