@@ -243,64 +243,176 @@ function _logicalScore(claim, flags) {
     return Math.max(0.10, Math.min(0.90, score));
 }
 
-// Build a neutral restatement from the actual claim text
+// ── SMART PATTERN ANALYSIS HELPERS ───────────────────────────────────────
+
+// Extract numbers, percentages, dates, named entities from claim
+function _extractFacts(claim) {
+    const numbers     = claim.match(/\b\d[\d,]*\.?\d*\s*(%|percent|million|billion|trillion|thousand)?\b/gi) || [];
+    const dates       = claim.match(/\b(19|20)\d{2}\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(,?\s*\d{4})?\b/gi) || [];
+    const quotedText  = claim.match(/"[^"]{4,80}"/g) || [];
+    const namedThings = claim.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+    return { numbers, dates, quotedText, namedThings };
+}
+
+// Detect claim type from language patterns
+function _detectClaimType(claim) {
+    const lower = claim.toLowerCase();
+    if (/\b(always|never|all|every|no one|nobody|everyone|entirely|completely|100%|zero)\b/.test(lower)) return "absolute";
+    if (/\b(will|going to|soon|predicted|forecast|by \d{4})\b/.test(lower)) return "predictive";
+    if (/\b(caused?|leads? to|results? in|due to|because of|responsible for)\b/.test(lower)) return "causal";
+    if (/\b(best|worst|greatest|most|least|number one|#1|top)\b/.test(lower)) return "superlative";
+    if (/\b(should|must|need to|have to|ought to|required)\b/.test(lower)) return "normative";
+    if (/\b(said|says|stated|claimed|announced|declared|tweeted|posted)\b/.test(lower)) return "quote";
+    if (/\b(\d+%|percent|majority|minority|most|many|few|several)\b/.test(lower)) return "statistical";
+    return "general";
+}
+
+// Generate specific search suggestions based on claim content
+function _buildSearchSuggestions(claim, dna, facts) {
+    const suggestions = [];
+    const entities = dna?.entities || facts.namedThings.slice(0, 3);
+
+    if (facts.numbers.length > 0 && entities.length > 0)
+        suggestions.push(`"${entities[0]}" ${facts.numbers[0]} site:gov OR site:edu`);
+    if (facts.dates.length > 0 && entities.length > 0)
+        suggestions.push(`"${entities[0]}" ${facts.dates[0]}`);
+    if (entities.length >= 2)
+        suggestions.push(`"${entities[0]}" "${entities[1]}" fact check`);
+    if (entities.length > 0)
+        suggestions.push(`${entities[0]} primary source official record`);
+
+    suggestions.push("PolitiFact OR FactCheck.org OR Snopes OR AP Fact Check");
+
+    return suggestions.slice(0, 3);
+}
+
+// Build a real neutral restatement
 function _neutralize(claim) {
-    const words = claim.trim().split(/\s+/);
-    const short  = words.slice(0, 14).join(' ') + (words.length > 14 ? '…' : '');
-    // Strip charged words
-    const charged = /\b(radical|extreme|dangerous|destroy|invasion|criminal|catastrophe|disaster|elites|globalists)\b/gi;
-    const neutralized = short.replace(charged, '[described term]');
-    return `The claim asserts: "${neutralized}" — pattern scan only, no AI factual baseline available.`;
+    const chargedPositive = /\b(amazing|incredible|brilliant|heroic|patriot|freedom fighter|visionary|revolutionary)\b/gi;
+    const chargedNegative = /\b(radical|extreme|dangerous|destroy|invasion|criminal|catastrophe|disaster|elites|globalists|regime|tyrant|corrupt|evil|woke|fascist)\b/gi;
+    const emotionalAmps   = /\b(outrageous|shocking|bombshell|explosive|devastating|terrifying|unbelievable|disgusting)\b/gi;
+
+    let neutral = claim
+        .replace(chargedPositive, (m) => `[positively characterized ${m}]`)
+        .replace(chargedNegative, (m) => `[negatively characterized ${m}]`)
+        .replace(emotionalAmps,   '[emphatic descriptor]')
+        .replace(/!+/g, '.')
+        .replace(/\?\?+/g, '?');
+
+    const words = neutral.trim().split(/\s+/);
+    if (words.length > 40) neutral = words.slice(0, 40).join(' ') + '…';
+
+    return neutral === claim.trim()
+        ? `The claim states: "${neutral.slice(0, 120)}${neutral.length > 120 ? '…' : ''}" — no charged language detected; evaluate the underlying assertion directly.`
+        : `Stripped of framing: "${neutral}" — the core assertion can now be evaluated on its factual merits.`;
+}
+
+// Derive an aggressive verdict from pattern evidence
+function _deriveVerdict(claim, flags, manip, claimType, facts, specificity) {
+    const lower = claim.toLowerCase();
+
+    // Nonsense / unfalsifiable
+    if (/\b(bigfoot|flat earth|chemtrail|lizard people|microchip|5g causes|illuminati|deep state controls everything)\b/i.test(claim))
+        return { verdict: "FALSE", confidence: 0.88, reason: "Claim matches well-documented conspiracy theory with no credible evidentiary basis." };
+
+    // Absolute claims with no source are almost always misleading
+    if (claimType === "absolute" && !(/according to|published|source|study|data/i.test(claim)))
+        return { verdict: "MISLEADING", confidence: 0.65, reason: "Absolute language (always/never/all/everyone) applied to a complex topic without citation is a strong indicator of oversimplification." };
+
+    // High manipulation score = misleading framing at minimum
+    if (manip >= 0.6)
+        return { verdict: "MISLEADING", confidence: 0.70, reason: `${flags.length} manipulation technique(s) detected including: ${flags.slice(0,2).map(f=>f.split('—')[0].trim()).join(', ')}. Heavy rhetorical loading suggests the framing is designed to provoke rather than inform.` };
+
+    // Quoted claims without verifiable attribution
+    if (claimType === "quote" && facts.quotedText.length > 0 && !/\b(according to|published|reported|source)\b/i.test(claim))
+        return { verdict: "UNVERIFIABLE", confidence: 0.60, reason: "Attributed quote with no verifiable source. Quotes are frequently fabricated, taken out of context, or misattributed online." };
+
+    // Statistical claims without a source
+    if (claimType === "statistical" && facts.numbers.length > 0 && !/according to|published|source|study|data|survey/i.test(claim))
+        return { verdict: "UNVERIFIABLE", confidence: 0.55, reason: `Specific figure (${facts.numbers[0]}) cited with no sourcing. Statistics without attribution cannot be verified and are frequently invented or misrepresented.` };
+
+    // Causal claims are almost always oversimplified
+    if (claimType === "causal" && manip > 0.2)
+        return { verdict: "MISLEADING", confidence: 0.58, reason: "Causal framing combined with rhetorical loading. Single-cause explanations for complex phenomena are typically oversimplifications." };
+
+    // Predictive claims are unverifiable by definition
+    if (claimType === "predictive")
+        return { verdict: "UNVERIFIABLE", confidence: 0.50, reason: "Predictive claim — cannot be verified against current facts. Track record of the source matters." };
+
+    // Moderate flags = probably misleading
+    if (flags.length >= 2)
+        return { verdict: "MISLEADING", confidence: 0.52, reason: `${flags.length} rhetorical patterns detected. Not necessarily false, but framed in a way that warrants scrutiny.` };
+
+    // Low specificity = can't evaluate
+    if (specificity < 0.3)
+        return { verdict: "UNVERIFIABLE", confidence: 0.40, reason: "Claim is too vague to evaluate — no specific names, dates, numbers, or falsifiable assertions." };
+
+    // Default: unverifiable but not alarming
+    return { verdict: "UNVERIFIABLE", confidence: 0.35, reason: "No strong manipulation signals detected, but pattern analysis cannot verify factual accuracy without a knowledge base." };
 }
 
 function patternAnalysis(claim, claimType, dna) {
-    const matched = MANIPULATION_PATTERNS.filter(p => p.re.test(claim));
-    const flags   = matched.map(p => p.flag);
-    const manip   = Math.min(1, matched.reduce((sum, p) => sum + p.weight, 0));
+    const matched    = MANIPULATION_PATTERNS.filter(p => p.re.test(claim));
+    const flags      = matched.map(p => p.flag);
+    const manip      = Math.min(1, matched.reduce((sum, p) => sum + p.weight, 0));
+    const facts      = _extractFacts(claim);
+    const detectedType = _detectClaimType(claim);
 
-    const specificity  = _claimSpecificity(claim, dna);
-    const logical      = _logicalScore(claim, flags);
-    const transparency = /\b(according to|per|published|reported by|source:|via )\b/i.test(claim) ? 0.62 : 0.28;
-    const corroboration = dna?.entities?.length > 1 ? 0.40 : 0.22;
-    const contextScore  = Math.max(0.15, 0.60 - manip * 0.5);
+    const specificity   = _claimSpecificity(claim, dna);
+    const logical       = _logicalScore(claim, flags);
+    const hasSource     = /\b(according to|per|published|reported by|source:|via |study by|data from)\b/i.test(claim);
+    const transparency  = hasSource ? 0.65 : 0.22;
+    const corroboration = facts.numbers.length > 0 || facts.dates.length > 0 ? 0.42 : (dna?.entities?.length > 1 ? 0.35 : 0.18);
+    const contextScore  = Math.max(0.12, 0.65 - manip * 0.55);
     const credibility   = (specificity + logical + transparency + corroboration + contextScore) / 5;
 
-    const hasFlags = flags.length > 0;
-    const verdict  = hasFlags ? "UNVERIFIABLE" : "UNVERIFIABLE";
+    const { verdict, confidence, reason } = _deriveVerdict(claim, flags, manip, detectedType, facts, specificity);
+    const searches = _buildSearchSuggestions(claim, dna, facts);
+
+    const allEntities = [...(dna?.entities || []), ...facts.namedThings.slice(0,3)].filter((v,i,a)=>a.indexOf(v)===i);
+
+    const manipSummary = flags.length > 0
+        ? `${flags.length} rhetorical pattern(s) detected: ${flags.map(f=>f.split('—')[0].trim()).join('; ')}.`
+        : "No manipulation language patterns detected.";
+
+    const typeSummary = {
+        absolute:    "Absolute claims (always/never/everyone) are almost never accurate — reality is usually more complex.",
+        predictive:  "Predictive claims can't be fact-checked against current data — evaluate the source's track record.",
+        causal:      "Causal claims ('X causes Y') require rigorous evidence — single-cause explanations are usually oversimplified.",
+        superlative: "Superlative claims ('best/worst/greatest') require a defined comparison set — often used to mislead.",
+        normative:   "Normative claim ('should/must') — this is a value judgment, not a verifiable fact.",
+        quote:       "Attributed quotes circulate widely online. Verify against original source before sharing.",
+        statistical: "Statistical claims require a sourced study or dataset. Numbers without attribution are frequently wrong.",
+        general:     "",
+    }[detectedType] || "";
 
     return {
         verdict,
-        confidence: hasFlags ? 0.45 : 0.35,
-        confidenceLabel: "INFERENCE ONLY",
+        confidence,
+        confidenceLabel: confidence >= 0.65 ? "MODERATE CONFIDENCE" : confidence >= 0.50 ? "LOW-MODERATE CONFIDENCE" : "INFERENCE ONLY",
         credibilityScore: Math.max(0.08, Math.min(0.88, credibility)),
         dimensions: {
             sourceQuality:    transparency,
-            corroboration:    corroboration,
+            corroboration,
             contextIntegrity: contextScore,
             logicalSoundness: logical,
             falsifiability:   specificity,
-            transparency:     transparency,
+            transparency,
         },
         neutralRestatement: _neutralize(claim),
         manipulationTechniques: flags,
         manipulationScore: manip,
-        plainSummary: hasFlags
-            ? `Language scan flagged ${flags.length} pattern(s) — ${flags[0].split('—')[0].trim()}. AI providers unavailable for factual verification.`
-            : "No manipulation language patterns detected. AI providers unavailable — cannot verify factual claims.",
-        reasoning: hasFlags
-            ? `Patterns detected: ${flags.join("; ")}.`
-            : "No strong manipulation language found. Claim specificity and logical structure scored independently.",
+        plainSummary: [manipSummary, typeSummary].filter(Boolean).join(' ') || "Pattern scan complete. Verify with primary sources.",
+        reasoning: reason,
         civicDataUsed: false,
         framingFlags: flags,
-        educatedInference: hasFlags
-            ? `${flags.length} language pattern(s) detected. This does not confirm the claim is false — it flags rhetoric worth scrutinizing.`
-            : "No manipulation language found. Still verify the underlying facts with primary sources.",
-        pathForward: dna?.entities?.length > 0
-            ? `Search for "${dna.entities[0]}" in primary sources: government records, peer-reviewed studies, or official statements.`
-            : "Look for a primary source — an official record, government data, or peer-reviewed study — before sharing.",
+        educatedInference: reason,
+        pathForward: searches.length > 0
+            ? `Suggested searches: ${searches.map(s=>`"${s}"`).join(' | ')}`
+            : "Search primary sources: government records, peer-reviewed studies, or official statements.",
         claimDNA: {
-            verifiablePieces: dna?.entities?.length > 0 ? dna.entities : ["No specific named entities found"],
-            unverifiablePieces: dna?.checkable ? [] : ["Claim is too vague to fact-check specifically"],
+            verifiablePieces: allEntities.length > 0 ? allEntities : facts.numbers.length > 0 ? facts.numbers : ["No specific verifiable claims found"],
+            unverifiablePieces: detectedType === "predictive" ? ["Future prediction — inherently unverifiable"] : specificity < 0.3 ? ["Claim too vague to check specifically"] : [],
         },
         provider: "pattern", method: "pattern",
     };
