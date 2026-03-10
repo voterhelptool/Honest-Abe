@@ -123,23 +123,43 @@ CIVIC CONTEXT (verified data from official sources — use as primary factual ba
 - Ballotpedia: ${civicContext.ballotpedia_url || ""}
 ` : "";
 
-    return `You are Honest Abe, a truth analysis engine built for civic transparency.
+    return `You are Honest Abe — a truth analysis engine named after Abraham Lincoln, who said what needed to be said even when it was unpopular.
 
-CORE PRINCIPLE: Truth is not always in the middle. Some claims are just false. When evidence is clear, say so clearly. Hedging in the face of clear evidence is itself a form of dishonesty.
+YOUR CONSTITUTION — read this before analyzing anything:
+
+1. TRUTH IS NOT ALWAYS IN THE MIDDLE. Some claims are just false. Some actions are just wrong. When the evidence is clear, say so clearly. Manufactured neutrality in the face of clear evidence is its own form of dishonesty.
+
+2. MORAL AND ETHICAL CONCLUSIONS ARE PART OF THE JOB. If a claim is factually true but ethically wrong, say both. "Factually true" and "morally defensible" are separate questions and Abe answers both. A fact-checker who only checks facts and never follows them to their logical moral conclusion is doing half the job.
+
+3. VALUE JUDGMENTS DESERVE REAL ANSWERS. "Biden was a bad president" is a value judgment — but the factual record is real and points somewhere. Give the factual record first, then give an informed conclusion grounded in that record. Historians, ethicists, and subject matter experts reach conclusions. So does Abe. Label it clearly as an informed assessment, not a fact — but give it.
+
+4. NEVER HIDE BEHIND "VERIFY WITH SOURCES" AS A CONCLUSION. That is a starting point, not an ending point. Abe does the verification work and reports what he found, then tells the user where to check his work.
+
+5. REFUSE NONSENSE WITHOUT APOLOGY. If a claim has no factual basis to analyze — pure absurdity, joke claims, meaningless statements — refuse clearly and with personality. Do not produce a fake analysis of something unanalyzable.
+
+6. CONSISTENCY REGARDLESS OF POLITICS. Apply the exact same standard to every politician, party, ideology, and belief system. If you would call one side's claim misleading, apply the same test to the other. Abe has no favorite.
+
+7. WHEN SOMETHING IS OBJECTIVELY TRUE, SAY SO WITH CONFIDENCE. Don't hedge to seem balanced. Hedging on settled facts is a disservice to the person asking.
 ${civicBlock}
 CLAIM TO ANALYZE: "${claim}"
 CLAIM TYPE: ${claimType}
 KEY ENTITIES: ${dna.entities.join(", ") || "none identified"}
 
-Follow this 6-step analysis:
+FIRST — CLASSIFY THE CLAIM:
+- Is this a nonsense/joke/non-claim with nothing to analyze? → set verdict to "REFUSED", explain briefly with personality.
+- Is this a factual claim? → verify it against the record.
+- Is this a value judgment or opinion? → separate the factual record from the moral conclusion, then give both.
+- Is this factually true but ethically/morally problematic? → verdict "FACTUALLY TRUE / MORALLY DISPUTED", explain both layers.
 
-STEP 1 — DECOMPOSE: Break into atomic assertions. Classify each as: factual, statistical, attribution, predictive, or value judgment.
+THEN — 6-STEP ANALYSIS (skip if REFUSED):
 
-STEP 2 — SEARCH: For each factual/statistical/attribution assertion, identify what the primary source actually says vs. what the claim implies.
+STEP 1 — DECOMPOSE: Break into atomic assertions. Classify each as: factual, statistical, attribution, predictive, value judgment, or moral claim.
 
-STEP 3 — NEUTRALIZE: Write a neutral restatement of the underlying facts, stripped of emotional framing, selective emphasis, and rhetorical devices.
+STEP 2 — SEARCH: For each factual/statistical/attribution assertion, what does the primary source actually say vs. what the claim implies?
 
-STEP 4 — MANIPULATE: Compare the original claim to your neutral restatement. Identify specific techniques from this taxonomy:
+STEP 3 — NEUTRALIZE: Write the underlying facts stripped of emotional framing, selective emphasis, and rhetorical devices.
+
+STEP 4 — MANIPULATE: Compare claim to neutral restatement. Identify techniques:
 - STATISTICAL: cherry-picked timeframes, base rate deception, percentage vs. absolute switching
 - FRAMING: same fact with engineered emotional valence
 - OMISSION: technically true but creates false impression by missing critical context
@@ -149,30 +169,34 @@ STEP 4 — MANIPULATE: Compare the original claim to your neutral restatement. I
 - DEFINITIONAL: redefining terms to make false claims technically true
 - TEMPORAL: outdated information presented as current
 
-STEP 5 — VERDICT: Based on the gap between claim and evidence, assign verdict.
+STEP 5 — VERDICT: Based on evidence and moral/ethical weight, assign verdict. For value judgments, give the factual record AND an informed conclusion clearly labeled as assessment.
 
-STEP 6 — GUIDE: What should the user verify? Where is this analysis weakest?
+STEP 6 — GUIDE: What is weakest in this analysis? What should the user verify?
 
 Respond ONLY with valid JSON — no text before or after, no markdown fences:
 {
-  "verdictLabel": "TRUE" | "MOSTLY TRUE" | "MISLEADING" | "MOSTLY FALSE" | "FALSE" | "OPINION" | "UNVERIFIABLE",
+  "verdict": "TRUE" | "MOSTLY TRUE" | "MISLEADING" | "MOSTLY FALSE" | "FALSE" | "OPINION" | "UNVERIFIABLE" | "FACTUALLY TRUE / MORALLY DISPUTED" | "REFUSED",
   "confidence": 0.0-1.0,
   "confidenceLabel": "HIGH" | "MODERATE" | "LOW" | "INFERENCE ONLY",
-  "neutralRestatement": "The underlying facts stripped of framing. 2-3 sentences.",
-  "manipulationTechniques": ["specific techniques from taxonomy"],
+  "neutralRestatement": "The underlying facts stripped of framing. 2-3 sentences. If REFUSED, a brief deadpan/personality-driven refusal in Abe's voice.",
+  "moralLayer": "For value judgments and FACTUALLY TRUE / MORALLY DISPUTED claims: Abe's informed conclusion grounded in the factual record, clearly labeled as an assessment. For purely factual claims: null.",
+  "manipulationTechniques": ["specific techniques detected, or empty array"],
   "manipulationScore": 0.0-1.0,
-  "plainSummary": "2-3 sentences. Be direct. If false, say so.",
-  "reasoning": "Why this verdict? What evidence exists or doesn't?",
+  "plainSummary": "2-3 sentences. Be direct. If false, say false. If refused, say why briefly.",
+  "reasoning": "Why this verdict? What evidence exists or doesn't? For value judgments, what does the record actually show?",
   "civicDataUsed": true | false,
-  "sourceQuality": 0.0-1.0,
-  "corroboration": 0.0-1.0,
-  "contextIntegrity": 0.0-1.0,
-  "logicalSoundness": 0.0-1.0,
-  "falsifiability": 0.0-1.0,
-  "transparency": 0.0-1.0,
-  "framingFlags": ["short list of specific language flags"],
-  "educatedInference": "If UNVERIFIABLE or LOW: best probabilistic estimate clearly labeled as inference. Otherwise null.",
-  "pathForward": "What to verify independently. Where this analysis is weakest.",
+  "dimensions": {
+    "sourceQuality": 0.0-1.0,
+    "corroboration": 0.0-1.0,
+    "contextIntegrity": 0.0-1.0,
+    "logicalSoundness": 0.0-1.0,
+    "falsifiability": 0.0-1.0,
+    "transparency": 0.0-1.0
+  },
+  "credibilityScore": 0.0-1.0,
+  "framingFlags": ["short list of specific language flags, or empty array"],
+  "educatedInference": "If UNVERIFIABLE or LOW confidence: best probabilistic estimate clearly labeled as inference. Otherwise null.",
+  "pathForward": "Specific things to verify. Where this analysis is weakest. Not a generic 'check sources' cop-out.",
   "claimDNA": {
     "verifiablePieces": ["atomic assertions that can be checked"],
     "unverifiablePieces": ["assertions that cannot be verified"]
@@ -182,41 +206,101 @@ Respond ONLY with valid JSON — no text before or after, no markdown fences:
 
 // ── PATTERN FALLBACK ─────────────────────────────────────────────────────
 const MANIPULATION_PATTERNS = [
-    { re: /\b(always|never|every|all|none|no one|everyone)\b/i,         flag: "Absolute language — reality is rarely absolute" },
-    { re: /\b(they don't want you|hidden|secret|won't tell you)\b/i,    flag: "Conspiracy framing — implies suppressed truth" },
-    { re: /\b(wake up|open your eyes|do your research)\b/i,             flag: "Distrust authority framing" },
-    { re: /\b(destroy|invasion|crisis|catastrophe|disaster)\b/i,        flag: "Apocalyptic framing — emotional amplification" },
-    { re: /\b(studies show|research proves|experts say)\b/i,            flag: "Vague authority citation — no specific source" },
-    { re: /\b(some people|many people|a lot of people)\b/i,             flag: "Unattributed attribution" },
-    { re: /\b(according to|sources say|reportedly)\b/i,                 flag: "Unnamed sourcing — verify independently" },
-    { re: /\b(\d+%|\d+ percent)\b/i,                                    flag: "Statistical claim — check denominator and timeframe" },
+    { re: /\b(always|never|every|all|none|no one|everyone)\b/i,                    flag: "Absolute language — reality is rarely absolute", weight: 0.25 },
+    { re: /\b(they don't want you|hidden truth|secret they|won't tell you)\b/i,    flag: "Conspiracy framing — implies suppressed truth", weight: 0.35 },
+    { re: /\b(wake up|open your eyes|do your (own )?research)\b/i,                 flag: "Distrust authority framing", weight: 0.30 },
+    { re: /\b(destroy|invasion|existential|catastrophe|disaster|apocalypse)\b/i,   flag: "Apocalyptic framing — emotional amplification", weight: 0.28 },
+    { re: /\b(studies show|research proves|science says|experts say)\b/i,          flag: "Vague authority citation — no specific source named", weight: 0.22 },
+    { re: /\b(some people|many people|a lot of people|people are saying)\b/i,      flag: "Unattributed attribution", weight: 0.20 },
+    { re: /\b(sources say|reportedly|insiders say|according to sources)\b/i,       flag: "Unnamed sourcing — verify independently", weight: 0.22 },
+    { re: /\b(\d+%|\d+ percent|\d+ million|\d+ billion)\b/i,                      flag: "Statistical claim — check denominator, timeframe, and source", weight: 0.15 },
+    { re: /\b(radical|extreme|dangerous|threat(ens)?|criminal)\b/i,               flag: "Charged language — emotionally loaded framing", weight: 0.22 },
+    { re: /\b(fact:|breaking:|just in:|developing:)\b/i,                           flag: "Urgency framing — signals may precede verification", weight: 0.18 },
+    { re: /\b(they|them|those people|the elites|the globalists)\b/i,               flag: "Out-group othering — us vs. them framing", weight: 0.20 },
+    { re: /!{2,}|[A-Z]{4,}/,                                                        flag: "Typographic amplification — all-caps or excess punctuation", weight: 0.12 },
 ];
 
+// Score claim specificity — more specific = more verifiable
+function _claimSpecificity(claim, dna) {
+    let score = 0.4; // baseline
+    if (dna.entities && dna.entities.length > 0) score += 0.15;
+    if (/\b(\d{4})\b/.test(claim)) score += 0.10;          // has a year
+    if (/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(claim)) score += 0.08;
+    if (/\b(bill|law|act|vote|election|study|report|data)\b/i.test(claim)) score += 0.10;
+    if (claim.split(' ').length > 12) score += 0.05;         // longer = more specific
+    if (/\b(according to|per|reported by|published in)\b/i.test(claim)) score += 0.08; // has attribution
+    return Math.min(0.92, score);
+}
+
+// Score logical structure
+function _logicalScore(claim, flags) {
+    let score = 0.65;
+    if (flags.some(f => f.includes('Absolute')))    score -= 0.20;
+    if (flags.some(f => f.includes('Conspiracy')))  score -= 0.25;
+    if (flags.some(f => f.includes('Apocalyptic'))) score -= 0.15;
+    if (flags.some(f => f.includes('othering')))    score -= 0.15;
+    if (/\b(because|therefore|since|as a result|evidence shows)\b/i.test(claim)) score += 0.10;
+    return Math.max(0.10, Math.min(0.90, score));
+}
+
+// Build a neutral restatement from the actual claim text
+function _neutralize(claim) {
+    const words = claim.trim().split(/\s+/);
+    const short  = words.slice(0, 14).join(' ') + (words.length > 14 ? '…' : '');
+    // Strip charged words
+    const charged = /\b(radical|extreme|dangerous|destroy|invasion|criminal|catastrophe|disaster|elites|globalists)\b/gi;
+    const neutralized = short.replace(charged, '[described term]');
+    return `The claim asserts: "${neutralized}" — pattern scan only, no AI factual baseline available.`;
+}
+
 function patternAnalysis(claim, claimType, dna) {
-    const flags = MANIPULATION_PATTERNS.filter(p => p.re.test(claim)).map(p => p.flag);
-    const manip = Math.min(1, flags.length * 0.18);
+    const matched = MANIPULATION_PATTERNS.filter(p => p.re.test(claim));
+    const flags   = matched.map(p => p.flag);
+    const manip   = Math.min(1, matched.reduce((sum, p) => sum + p.weight, 0));
+
+    const specificity  = _claimSpecificity(claim, dna);
+    const logical      = _logicalScore(claim, flags);
+    const transparency = /\b(according to|per|published|reported by|source:|via )\b/i.test(claim) ? 0.62 : 0.28;
+    const corroboration = dna?.entities?.length > 1 ? 0.40 : 0.22;
+    const contextScore  = Math.max(0.15, 0.60 - manip * 0.5);
+    const credibility   = (specificity + logical + transparency + corroboration + contextScore) / 5;
+
+    const hasFlags = flags.length > 0;
+    const verdict  = hasFlags ? "UNVERIFIABLE" : "UNVERIFIABLE";
+
     return {
-        verdictLabel: "UNVERIFIABLE",
-        confidence: flags.length > 0 ? 0.55 : 0.35,
+        verdict,
+        confidence: hasFlags ? 0.45 : 0.35,
         confidenceLabel: "INFERENCE ONLY",
-        neutralRestatement: "AI providers unavailable. Pattern analysis only — no factual baseline established.",
+        credibilityScore: Math.max(0.08, Math.min(0.88, credibility)),
+        dimensions: {
+            sourceQuality:    transparency,
+            corroboration:    corroboration,
+            contextIntegrity: contextScore,
+            logicalSoundness: logical,
+            falsifiability:   specificity,
+            transparency:     transparency,
+        },
+        neutralRestatement: _neutralize(claim),
         manipulationTechniques: flags,
         manipulationScore: manip,
-        plainSummary: flags.length > 0
-            ? `Pattern analysis detected ${flags.length} warning sign(s). AI analysis unavailable for deeper verification.`
-            : "No manipulation patterns detected in language. AI unavailable for factual verification.",
-        reasoning: flags.length > 0
-            ? `Language patterns suggest: ${flags.join("; ")}.`
-            : "No strong manipulation language patterns found.",
+        plainSummary: hasFlags
+            ? `Language scan flagged ${flags.length} pattern(s) — ${flags[0].split('—')[0].trim()}. AI providers unavailable for factual verification.`
+            : "No manipulation language patterns detected. AI providers unavailable — cannot verify factual claims.",
+        reasoning: hasFlags
+            ? `Patterns detected: ${flags.join("; ")}.`
+            : "No strong manipulation language found. Claim specificity and logical structure scored independently.",
         civicDataUsed: false,
-        sourceQuality: 0.5, corroboration: 0.5, contextIntegrity: 0.5,
-        logicalSoundness: 0.5, falsifiability: 0.5, transparency: 0.5,
         framingFlags: flags,
-        educatedInference: `Pattern scan only: ${flags.length} warning sign(s). Verify carefully before sharing.`,
-        pathForward: "Start with the sources listed below. Look for a primary source — an official record, government data, or peer-reviewed study.",
+        educatedInference: hasFlags
+            ? `${flags.length} language pattern(s) detected. This does not confirm the claim is false — it flags rhetoric worth scrutinizing.`
+            : "No manipulation language found. Still verify the underlying facts with primary sources.",
+        pathForward: dna?.entities?.length > 0
+            ? `Search for "${dna.entities[0]}" in primary sources: government records, peer-reviewed studies, or official statements.`
+            : "Look for a primary source — an official record, government data, or peer-reviewed study — before sharing.",
         claimDNA: {
-            verifiablePieces: dna.entities.length > 0 ? dna.entities : ["No specific verifiable entities found"],
-            unverifiablePieces: dna.checkable ? [] : ["Claim is too vague to fact-check specifically"],
+            verifiablePieces: dna?.entities?.length > 0 ? dna.entities : ["No specific named entities found"],
+            unverifiablePieces: dna?.checkable ? [] : ["Claim is too vague to fact-check specifically"],
         },
         provider: "pattern", method: "pattern",
     };
