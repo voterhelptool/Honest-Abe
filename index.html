@@ -1516,17 +1516,26 @@ function renderActionBlock(claim, verdict, result) {
     const skipBtn  = document.getElementById("puter-skip-btn");
     if (!banner || !signBtn || !skipBtn) return;
 
-    // Only show if Puter loaded but user isn't signed in
     async function checkPuter() {
         if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") return;
         if (sessionStorage.getItem("abe-puter-skipped")) return;
         try {
             const signedIn = await puter.auth.isSignedIn();
-            if (!signedIn) banner.classList.add("visible");
+            if (!signedIn) { banner.classList.add("visible"); return; }
+
+            // Signed in — validate session is fresh with a ping
+            try {
+                await puter.auth.getUser();
+                // Valid session — stay hidden
+            } catch(e) {
+                // Stale session (401) — sign out and prompt fresh login
+                console.log("[Honest Abe] Stale Puter session — clearing and prompting sign-in");
+                try { await puter.auth.signOut(); } catch(_) {}
+                banner.classList.add("visible");
+            }
         } catch(e) { /* Puter unavailable */ }
     }
 
-    // Wait for Puter script to finish loading before checking
     if (typeof puter !== "undefined") {
         checkPuter();
     } else {
@@ -1539,7 +1548,6 @@ function renderActionBlock(claim, verdict, result) {
             const signedIn = await puter.auth.isSignedIn();
             if (signedIn) {
                 banner.classList.remove("visible");
-                // Force nlp to re-check providers
                 if (typeof nlp !== "undefined") nlp._active = null;
             }
         } catch(e) { /* user closed popup */ }
