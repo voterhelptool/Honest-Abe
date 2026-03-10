@@ -19,21 +19,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<meta name="description" content="Honest Abe is a free, open-source truth analysis tool. Paste any claim or headline and get a credibility breakdown, manipulation detection, and recommended sources. No account. No tracking. No ads.">
+<meta name="description" content="Honest Abe tells you if a claim is TRUE, FALSE, or MISLEADING. Paste any headline, quote, or statement — get a plain-English verdict with reasoning. Free, no account, no ads. Not affiliated with any election audit tool.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Independent civic technology project">
+<meta name="keywords" content="fact checker, truth checker, is this true, fake news detector, misinformation, claim verification, media literacy, manipulation detection, TRUE FALSE MISLEADING verdict">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://voterhelptool.github.io/Honest-Abe/">
-<meta property="og:title" content="Honest Abe — Free Truth Analysis Tool">
-<meta property="og:description" content="Paste any claim or headline. Get a credibility score, manipulation detection, and recommended sources. Free, open-source, no account required.">
-<meta property="og:site_name" content="Honest Abe">
+<meta property="og:title" content="Honest Abe — Is It True? Paste Any Claim, Get a Verdict.">
+<meta property="og:description" content="Type or paste any claim, headline, or quote. Honest Abe tells you if it's TRUE, FALSE, or MISLEADING — with plain-English reasoning. Free. No account. No ads.">
+<meta property="og:site_name" content="Honest Abe — Truth Checker">
 
 <!-- Twitter/X card -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Honest Abe — Free Truth Analysis Tool">
-<meta name="twitter:description" content="Free, open-source truth analysis. No account. No tracking. No ads.">
+<meta name="twitter:title" content="Honest Abe — Is It True? Paste Any Claim, Get a Verdict.">
+<meta name="twitter:description" content="Paste any claim or headline. Get a TRUE, FALSE, or MISLEADING verdict with plain reasoning. Free, no account, no ads.">
 
 <!-- Schema.org structured data -->
 <script type="application/ld+json">
@@ -41,15 +42,25 @@
   "@context": "https://schema.org",
   "@type": "WebApplication",
   "name": "Honest Abe",
-  "description": "A free, open-source truth analysis tool. Paste any claim or headline to get a credibility score, manipulation detection, and source recommendations.",
+  "alternateName": "Honest Abe Truth Checker",
+  "description": "Honest Abe is a free truth-checking tool. Paste any claim, headline, quote, or statement and get a plain-English verdict — TRUE, FALSE, MISLEADING, or UNVERIFIABLE — with reasoning and manipulation detection. Not an election audit tool. Not affiliated with AUDIT USA or any voting system verification project.",
   "url": "https://voterhelptool.github.io/Honest-Abe/",
   "applicationCategory": "UtilitiesApplication",
+  "applicationSubCategory": "Fact Checking",
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "author": { "@type": "Person", "name": "Anonymous — independent civic technology project" },
-  "keywords": "fact check, truth analysis, misinformation, media literacy, claim verification, manipulation detection",
+  "keywords": "fact checker, truth checker, claim verification, is this true, fake news, misinformation detector, TRUE FALSE MISLEADING, media literacy, manipulation detection, headline checker",
   "isAccessibleForFree": true,
-  "license": "https://github.com/voterhelptool/Honest-Abe/blob/main/LICENSE"
+  "license": "https://github.com/voterhelptool/Honest-Abe/blob/main/LICENSE",
+  "featureList": [
+    "Verdict on any claim: TRUE, FALSE, MISLEADING, or UNVERIFIABLE",
+    "Manipulation detection and rhetorical analysis",
+    "Credibility scoring across 6 dimensions",
+    "Civic action prompts",
+    "No account required",
+    "No tracking or ads"
+  ]
 }
 </script>
 <link rel="manifest" href="honest-abe/pwa-manifest.json">
@@ -939,7 +950,7 @@
 </footer>
 
 <!-- Load order matters -->
-<script src="https://js.puter.com/v2/" crossorigin="anonymous" referrerpolicy="no-referrer-when-downgrade"></script>
+<script src="https://js.puter.com/v2/"></script>
 <script src="honest-abe/ethics.js"></script>
 <script src="honest-abe/truth-model.js"></script>
 <script src="honest-abe/hallucination-guard.js"></script>
@@ -1113,7 +1124,7 @@ function renderResult(result) {
 
     // ── ACTION CHALLENGE ──
     const rawClaim = $("claimInput")?.value || "";
-    renderActionBlock(rawClaim, result.verdict);
+    renderActionBlock(rawClaim, result.verdict, result);
 
 }
 
@@ -1461,14 +1472,25 @@ function detectActionTopic(claim) {
     return ACTION_DEFAULT;
 }
 
-function renderActionBlock(claim, verdict) {
+function renderActionBlock(claim, verdict, result) {
     const actionEl = $("actionBlock");
     if (!actionEl) return;
 
-    // Don't show for REFUSED
+    // Don't show for REFUSED or truly unanalyzable claims
     if (verdict === "REFUSED") { actionEl.style.display = "none"; return; }
 
+    // Don't show if claim is too short or vague to be civic
+    const words = (claim || "").trim().split(/\s+/).length;
+    if (words < 4) { actionEl.style.display = "none"; return; }
+
+    // Don't show if no topic matched AND confidence is low — it's just noise
     const topic = detectActionTopic(claim || "");
+    const isDefault = topic === ACTION_DEFAULT;
+    const score = result?.credibilityScore ?? null;
+    const confidence = (result?.confidenceLabel || "").toUpperCase();
+    if (isDefault && (confidence === "INFERENCE ONLY" || words < 6)) {
+        actionEl.style.display = "none"; return;
+    }
 
     $("actionSubhead").textContent = topic.subhead;
     $("actionChallenge").innerHTML = "— " + topic.challenge;
