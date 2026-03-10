@@ -88,7 +88,11 @@ function getSourcesForClaim(claimType, keywords = []) {
 
 // ── CLAIM TRIAGE ─────────────────────────────────────────────────────────
 function triageClaim(claim) {
-    const c = claim.toLowerCase();
+    const c = claim.toLowerCase().trim();
+    // Questions first — "who is", "what is", "when did", "how does", "why did", "where is", "can you tell me", "?"
+    if (/^(who|what|when|where|why|how|is|are|was|were|did|does|do|can|could|should|would|will)\b/.test(c)) return "question";
+    if (/\?$/.test(c.trim())) return "question";
+    if (/^(tell me|explain|describe|give me|show me)\b/.test(c)) return "question";
     if (/\b(\d+%|\d+ percent|statistics|data shows|studies|research shows|according to)\b/.test(c)) return "statistical";
     if (/\b(in \d{4}|during the|historically|century|decade|era|president .* said)\b/.test(c))      return "historical";
     if (/\b(i think|i believe|in my opinion|we should|should be|it's wrong|must|ought)\b/.test(c))  return "opinion";
@@ -200,6 +204,52 @@ Respond ONLY with valid JSON — no text before or after, no markdown fences:
   "claimDNA": {
     "verifiablePieces": ["atomic assertions that can be checked"],
     "unverifiablePieces": ["assertions that cannot be verified"]
+  }
+}`;
+}
+
+function buildQuestionPrompt(question, civicContext) {
+    const civicBlock = civicContext ? `
+CIVIC CONTEXT (verified data — use as primary factual baseline):
+- Representative: ${civicContext.name} (${civicContext.party || "?"})
+- District: ${civicContext.district || "?"}
+- State: ${civicContext.state || "?"}
+- Total FEC fundraising: ${civicContext.fec_total || "unknown"}
+- Top donor industries: ${civicContext.top_donors || "unknown"}
+- Bills sponsored/cosponsored: ${civicContext.bills_count || "unknown"}
+- Ballotpedia: ${civicContext.ballotpedia_url || ""}
+` : "";
+
+    return `You are Honest Abe — a civic knowledge assistant named after Abraham Lincoln. You answer questions directly, honestly, and without spin. You are not a fact-checker right now — you are answering a question.
+
+RULES:
+1. Answer the question directly and completely. Don't hedge unnecessarily.
+2. If the answer involves a public figure, give their background, role, and any notable facts.
+3. If the answer involves a civic topic (voting, legislation, government), include relevant civics context.
+4. Be concise but complete. No fluff, no filler.
+5. If you genuinely don't know, say so clearly — don't fabricate.
+6. Keep it conversational and direct. Abe doesn't lecture.
+${civicBlock}
+QUESTION: "${question}"
+
+Respond ONLY with a JSON object in this exact format — no preamble, no markdown fences:
+{
+  "verdict": "ANSWERED",
+  "plainSummary": "<direct answer to the question in 2-4 sentences>",
+  "moralLayer": "<any civic significance or why this matters — or null>",
+  "pathForward": "<where to verify or learn more>",
+  "confidenceLabel": "HIGH",
+  "credibilityScore": 0.75,
+  "manipulationScore": 0,
+  "manipulationTechniques": [],
+  "framingFlags": [],
+  "dimensions": {
+    "sourceQuality": 0.7,
+    "corroboration": 0.7,
+    "contextIntegrity": 0.8,
+    "logicalSoundness": 0.8,
+    "falsifiability": 0.6,
+    "transparency": 0.7
   }
 }`;
 }
@@ -437,7 +487,10 @@ class NLPEngine {
 
         const claimType = triageClaim(claim);
         const dna       = extractDNA(claim);
-        const prompt    = buildPrompt(claim, claimType, dna, context.civic || null);
+        const isQ       = claimType === "question";
+        const prompt    = isQ
+            ? buildQuestionPrompt(claim, context.civic || null)
+            : buildPrompt(claim, claimType, dna, context.civic || null);
 
         this._log("triage", "CLASSIFIED", claimType);
         if (context.civic) this._log("civic", "CONTEXT_LOADED", context.civic.name);
