@@ -528,6 +528,54 @@
   }
   .action-challenge strong { color: var(--gold); }
 
+  /* ── Puter Sign-in Banner ── */
+  #abe-puter-banner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #1a1a2e;
+    border: 1px solid rgba(255,255,255,.12);
+    border-left: 3px solid #a07608;
+    border-radius: 7px;
+    padding: 11px 14px;
+    margin-bottom: 14px;
+    font-size: 12.5px;
+    color: #c8c0b0;
+    line-height: 1.5;
+  }
+  #abe-puter-banner.visible { display: flex; }
+  #abe-puter-banner .puter-banner-text { flex: 1; }
+  #abe-puter-banner strong { color: #f5f0e8; }
+  #abe-puter-banner .puter-banner-note { font-size: 11px; color: #6b6b7a; margin-top: 2px; }
+  .puter-signin-btn {
+    padding: 7px 16px;
+    background: #a07608;
+    color: #f5f0e8;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background .15s;
+  }
+  .puter-signin-btn:hover { background: #c8960a; }
+  .puter-skip-btn {
+    background: none;
+    border: none;
+    color: #6b6b7a;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .puter-skip-btn:hover { color: #c8c0b0; }
+
   /* ── Browser Banner ── */
   #abe-browser-banner {
     display:none; align-items:center; gap:10px; flex-wrap:wrap;
@@ -668,6 +716,16 @@
 
   <div class="input-section">
     <label for="claimInput" class="section-label">Submit a claim for analysis</label>
+    <!-- Puter sign-in banner (shown when Puter loaded but user not signed in) -->
+    <div id="abe-puter-banner" role="status" aria-live="polite">
+      <div class="puter-banner-text">
+        <strong>Sign in for full AI analysis — free, no credit card.</strong>
+        <div class="puter-banner-note">Abe uses Puter to run AI. One free account, works on any claim. Skip to use pattern analysis instead.</div>
+      </div>
+      <button class="puter-signin-btn" id="puter-signin-btn">Sign in with Puter</button>
+      <button class="puter-skip-btn" id="puter-skip-btn">Skip for now</button>
+    </div>
+
     <!-- Browser compatibility banner -->
     <div id="abe-browser-banner" role="status" aria-live="polite">
       <span>👋 Looks like you're using a browser that may block Abe's AI provider. For the best experience, try <a href="https://www.mozilla.org/firefox/" target="_blank" rel="noopener">Firefox</a>, <a href="https://www.google.com/chrome/" target="_blank" rel="noopener">Chrome</a>, or <a href="https://www.microsoft.com/edge" target="_blank" rel="noopener">Edge</a>. <strong>Abe still works here</strong> — just using pattern analysis instead of full AI.</span>
@@ -1426,6 +1484,48 @@ function renderActionBlock(claim, verdict) {
 
     actionEl.style.display = "block";
 }
+
+// ── Puter sign-in banner ──────────────────────────────────────────────────
+(function initPuterBanner() {
+    const banner   = document.getElementById("abe-puter-banner");
+    const signBtn  = document.getElementById("puter-signin-btn");
+    const skipBtn  = document.getElementById("puter-skip-btn");
+    if (!banner || !signBtn || !skipBtn) return;
+
+    // Only show if Puter loaded but user isn't signed in
+    async function checkPuter() {
+        if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") return;
+        if (sessionStorage.getItem("abe-puter-skipped")) return;
+        try {
+            const signedIn = await puter.auth.isSignedIn();
+            if (!signedIn) banner.classList.add("visible");
+        } catch(e) { /* Puter unavailable */ }
+    }
+
+    // Wait for Puter script to finish loading before checking
+    if (typeof puter !== "undefined") {
+        checkPuter();
+    } else {
+        window.addEventListener("load", checkPuter);
+    }
+
+    signBtn.addEventListener("click", async () => {
+        try {
+            await puter.auth.signIn();
+            const signedIn = await puter.auth.isSignedIn();
+            if (signedIn) {
+                banner.classList.remove("visible");
+                // Force nlp to re-check providers
+                if (typeof nlp !== "undefined") nlp._active = null;
+            }
+        } catch(e) { /* user closed popup */ }
+    });
+
+    skipBtn.addEventListener("click", () => {
+        sessionStorage.setItem("abe-puter-skipped", "1");
+        banner.classList.remove("visible");
+    });
+})();
 
 // ── Browser compatibility check ───────────────────────────────────────────
 (function checkBrowser() {
