@@ -342,11 +342,11 @@ class NLPEngine {
                 const raw     = await this._timeout(adapter.query(prompt), timeout);
                 const parsed  = this._parse(raw, adapter.name);
 
-                if (!parsed?.verdictLabel) { this._log(adapter.name, "BAD_RESPONSE"); continue; }
+                if (!parsed?.verdict && !parsed?.verdictLabel) { this._log(adapter.name, "BAD_RESPONSE"); continue; }
 
                 result = parsed;
                 this._active = adapter.name;
-                this._log(adapter.name, "SUCCESS", parsed.verdictLabel);
+                this._log(adapter.name, "SUCCESS", parsed.verdict || parsed.verdictLabel);
                 break;
             } catch (e) {
                 this._log(adapter?.name || "?", "FAILED", e?.message);
@@ -359,18 +359,22 @@ class NLPEngine {
         }
 
         const sources    = getSourcesForClaim(claimType, dna.keywords);
+        // Support both nested dimensions object and flat fields (older AI responses)
+        const d = result.dimensions || {};
         const dimensions = {
-            sourceQuality:    result.sourceQuality,
-            corroboration:    result.corroboration,
-            contextIntegrity: result.contextIntegrity,
-            logicalSoundness: result.logicalSoundness,
-            falsifiability:   result.falsifiability,
-            transparency:     result.transparency,
+            sourceQuality:    d.sourceQuality    ?? result.sourceQuality    ?? 0.5,
+            corroboration:    d.corroboration    ?? result.corroboration    ?? 0.5,
+            contextIntegrity: d.contextIntegrity ?? result.contextIntegrity ?? 0.5,
+            logicalSoundness: d.logicalSoundness ?? result.logicalSoundness ?? 0.5,
+            falsifiability:   d.falsifiability   ?? result.falsifiability   ?? 0.5,
+            transparency:     d.transparency     ?? result.transparency     ?? 0.5,
         };
-        const credibilityScore = Object.values(dimensions).reduce((a, b) => a + b, 0) / 6;
-        const verdict = claimType === "opinion"
-            ? "OPINION"
-            : (result.verdictLabel || this._scoreToVerdict(credibilityScore, result.confidence));
+        const rawScore = Object.values(dimensions).reduce((a, b) => a + b, 0) / 6;
+        const credibilityScore = result.credibilityScore ?? (isNaN(rawScore) ? 0.5 : rawScore);
+        // Preserve verdict from AI/pattern — only fall back to scoring if nothing set
+        const verdict = result.verdict === "REFUSED" ? "REFUSED"
+            : claimType === "opinion" ? "OPINION"
+            : (result.verdict || result.verdictLabel || this._scoreToVerdict(credibilityScore, result.confidence));
 
         const final = {
             ...result,
