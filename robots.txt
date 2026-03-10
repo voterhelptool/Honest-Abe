@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://voterhelptool.github.io/Honest-Abe/sitemap.xml
