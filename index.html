@@ -345,6 +345,29 @@
   }
   .prebunk-watch::before { content: "Next time: "; font-weight: 700; color: var(--gold); }
 
+  /* ── FALLACY CARDS ── */
+  .fallacy-cards { margin: 16px 0 0 0; }
+  .fallacy-cards-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+  .fallacy-card-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .fallacy-card {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #0d0d0d; border: 1px solid #2a2a2a;
+    border-radius: 6px; padding: 10px 12px; max-width: 340px;
+  }
+  .fallacy-card img {
+    width: 56px; height: 56px; object-fit: cover;
+    border-radius: 4px; flex-shrink: 0;
+  }
+  .fallacy-card-body { flex: 1; }
+  .fallacy-card-name {
+    font-size: 12px; font-weight: 700; color: var(--gold);
+    margin-bottom: 3px;
+  }
+  .fallacy-card-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
   /* ── GAP REASON ── */
   .gap-block {
     margin: 16px 0 0 0;
@@ -856,6 +879,13 @@
       <div id="manipTechniques"></div>
     </div>
 
+
+    <!-- Fallacy Cards -->
+    <div id="fallacyCards" style="display:none" class="fallacy-cards" role="note" aria-label="Logical fallacies detected">
+      <div class="fallacy-cards-label">Logical Fallacy Detected</div>
+      <div class="fallacy-card-row" id="fallacyCardRow"></div>
+    </div>
+
     <!-- Framing Flags -->
     <div id="flagsBox"></div>
     <div class="bias-box" id="biasBox"></div>
@@ -999,6 +1029,7 @@
 <script src="honest-abe/adapters/openrouter.js"></script>
 <script src="honest-abe/adapters/ollamafree.js"></script>
 <script src="honest-abe/adapters/pattern.js"></script>
+<script src="honest-abe/fallacy-lookup.js"></script>
 <script src="honest-abe/nlp.js"></script>
 <script src="honest-abe/agent.js"></script>
 
@@ -1110,6 +1141,10 @@ function renderResult(result) {
         manipEl.style.display = "none";
     }
 
+    // ── FALLACY CARDS ──
+    renderFallacyCards(result.fallacies || [], result.verdict);
+
+
     // ── FRAMING FLAGS ──
     const flags = result.framingFlags ?? [];
     $("flagsBox").innerHTML = flags.map(f => `<div class="flag-item">${f}</div>`).join("");
@@ -1209,6 +1244,38 @@ function renderCredibilityIndex(result) {
     }
 }
 
+// ── Fallacy Card Renderer ─────────────────────────────────────────────────
+function renderFallacyCards(rawFallacies, verdict) {
+    const el = $("fallacyCards");
+    const row = $("fallacyCardRow");
+    if (!el || !row) return;
+
+    // Verdict gate — only show for misleading/false claims
+    if (!shouldShowFallacyCards(verdict)) { el.style.display = "none"; return; }
+
+    // Normalize via lookup — silently drops anything unrecognized
+    const cards = lookupFallacies(rawFallacies);
+    if (!cards.length) { el.style.display = "none"; return; }
+
+    // Update label for singular/plural
+    el.querySelector(".fallacy-cards-label").textContent =
+        cards.length === 1 ? "Logical Fallacy Detected" : "Logical Fallacies Detected";
+
+    row.innerHTML = cards.map(c => `
+        <div class="fallacy-card">
+          <img src="Fallacies_${c.fileKey}.jpg"
+               alt="${c.meta.name} fallacy card"
+               onerror="this.style.display='none'">
+          <div class="fallacy-card-body">
+            <div class="fallacy-card-name">${c.meta.name}</div>
+            <div class="fallacy-card-desc">${c.meta.desc}</div>
+          </div>
+        </div>`).join("");
+
+    el.style.display = "block";
+}
+
+
 function resetCredibilityIndex() {
     const fill = $("ci-fill");
     if (fill) fill.style.height = "0%";
@@ -1219,6 +1286,7 @@ function resetCredibilityIndex() {
     $("manipBlock").style.display = "none";
     if ($("moralBlock")) $("moralBlock").style.display = "none";
     if ($("actionBlock")) $("actionBlock").style.display = "none";
+    if ($("fallacyCards")) $("fallacyCards").style.display = "none";
 }
 
 // ── Civic context (from ?rep= URL param — MN Civic Profile handoff) ──────
