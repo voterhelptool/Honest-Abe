@@ -8,14 +8,25 @@ const PuterAdapter = {
     name: "Puter.js",
 
     async available() {
-        return typeof puter !== "undefined" && typeof puter.ai?.chat === "function";
+        if (typeof puter === "undefined" || typeof puter.ai?.chat !== "function") return false;
+        try {
+            const signedIn = await puter.auth.isSignedIn();
+            return !!signedIn;
+        } catch(e) {
+            return false;
+        }
     },
 
     async query(prompt) {
+        const signedIn = await puter.auth.isSignedIn();
+        if (!signedIn) await puter.auth.signIn();
         const response = await puter.ai.chat(prompt, {
-            model: "claude-sonnet-4-5",  // strong reasoning, falls back inside Puter if unavailable
+            model: "claude-sonnet-4-6",
         });
-        return typeof response === "string" ? response : response?.message?.content?.[0]?.text || JSON.stringify(response);
+        if (typeof response === "string") return response;
+        if (response?.message?.content?.[0]?.text) return response.message.content[0].text;
+        if (Array.isArray(response?.message?.content)) return response.message.content.map(c => c.text || "").join("");
+        return JSON.stringify(response);
     }
 };
 
