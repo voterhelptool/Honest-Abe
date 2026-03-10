@@ -698,7 +698,7 @@
 <body>
 
 <!-- ── SIGN-IN GATE ── -->
-<div id="abe-signin-gate" style="display:none;position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:24px;">
+<div id="abe-signin-gate" style="display:none;position:fixed;inset:0;background:#1a1a2e;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:24px;">
   <style>
     #abe-signin-gate { font-family: 'Playfair Display', serif; }
     .gate-logo { display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:8px; }
@@ -1568,33 +1568,15 @@ function renderActionBlock(claim, verdict, result) {
     const desc    = document.getElementById("gateDesc");
     if (!gate || !app) return;
 
-    function showApp() { gate.style.display = "none"; app.style.display = "block"; }
+    function showApp()  { gate.style.display = "none"; app.style.display = "block"; }
     function showGate() { gate.style.display = "flex"; app.style.display = "none"; }
 
-    // Puter not loaded at all — just show app with pattern fallback
-    if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") {
-        showApp(); return;
-    }
-
-    // Check session
-    try {
-        const signedIn = await puter.auth.isSignedIn();
-        if (signedIn) {
-            // Validate session is fresh
-            try {
-                await puter.auth.getUser();
-                showApp(); return;
-            } catch(e) {
-                // Stale — sign out and show gate
-                try { await puter.auth.signOut(); } catch(_) {}
-            }
-        }
-        showGate();
-    } catch(e) {
-        showApp(); // Auth check failed — just show app
-    }
-
+    // Always attach button listeners first — before any early returns
     signBtn.addEventListener("click", async () => {
+        if (typeof puter === "undefined" || typeof puter.auth?.signIn !== "function") {
+            // Puter not available — just show app
+            showApp(); return;
+        }
         signBtn.disabled = true;
         signBtn.textContent = "Signing in…";
         try {
@@ -1612,6 +1594,35 @@ function renderActionBlock(claim, verdict, result) {
         sessionStorage.setItem("abe-puter-skipped", "1");
         showApp();
     });
+
+    // Already skipped this session — go straight to app
+    if (sessionStorage.getItem("abe-puter-skipped")) {
+        showApp(); return;
+    }
+
+    // Puter not loaded — show gate so user can skip or try later
+    if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") {
+        showGate(); return;
+    }
+
+    // Check existing session
+    try {
+        const signedIn = await puter.auth.isSignedIn();
+        if (signedIn) {
+            // Validate session is still fresh
+            try {
+                await puter.auth.getUser();
+                showApp(); return; // Valid session — skip gate
+            } catch(e) {
+                // Stale session — sign out and fall through to gate
+                try { await puter.auth.signOut(); } catch(_) {}
+            }
+        }
+        showGate();
+    } catch(e) {
+        // Auth check threw — show gate, not app (safer)
+        showGate();
+    }
 })();
 
 (function initPuterBanner() {
