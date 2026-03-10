@@ -472,6 +472,62 @@
   .manip-technique { font-size:12px; color:var(--muted); padding:3px 0 3px 10px; border-left:2px solid rgba(245,124,0,.4); margin-bottom:4px; }
   .manip-none { font-size:12px; color:#81c784; }
 
+  /* ── Action Challenge ── */
+  .action-block {
+    margin-top: 18px;
+    background: rgba(201,150,42,.07);
+    border: 1px solid rgba(201,150,42,.3);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .action-header {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .action-subhead {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .action-links {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .action-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 9px 12px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--parchment);
+    font-size: 12.5px;
+    line-height: 1.45;
+    transition: background .15s, border-color .15s;
+  }
+  .action-link:hover { background: rgba(201,150,42,.1); border-color: rgba(201,150,42,.4); }
+  .action-link-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .action-link-body { flex: 1; }
+  .action-link-title { font-weight: 700; color: var(--gold); margin-bottom: 2px; }
+  .action-link-desc { color: var(--muted); font-size: 11.5px; }
+  .action-challenge {
+    margin-top: 12px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--parchment);
+    border-top: 1px solid rgba(201,150,42,.2);
+    padding-top: 10px;
+    line-height: 1.6;
+  }
+  .action-challenge strong { color: var(--gold); }
+
   /* ── Browser Banner ── */
   #abe-browser-banner {
     display:none; align-items:center; gap:10px; flex-wrap:wrap;
@@ -712,6 +768,14 @@
     <!-- Provider -->
     <div class="integrity-row">
       <span id="providerStatus" aria-live="polite" aria-atomic="true"></span>
+    </div>
+
+    <!-- Action Challenge -->
+    <div id="actionBlock" class="action-block" style="display:none" role="complementary" aria-label="Civic action">
+      <div class="action-header">So what are you going to do about it?</div>
+      <div class="action-subhead" id="actionSubhead"></div>
+      <div class="action-links" id="actionLinks"></div>
+      <div class="action-challenge" id="actionChallenge"></div>
     </div>
 
   </div>
@@ -982,8 +1046,11 @@ function renderResult(result) {
     // ── PROVIDER ──
     $("providerStatus").textContent = `Analyzed via ${result.provider || "pattern matching"}`;
 
-}
+    // ── ACTION CHALLENGE ──
+    const rawClaim = $("claimInput")?.value || "";
+    renderActionBlock(rawClaim, result.verdict);
 
+}
 
 
 // ── Credibility Index renderer ───────────────────────────────────────────
@@ -1034,6 +1101,7 @@ function resetCredibilityIndex() {
     $("neutralBlock").style.display = "none";
     $("manipBlock").style.display = "none";
     if ($("moralBlock")) $("moralBlock").style.display = "none";
+    if ($("actionBlock")) $("actionBlock").style.display = "none";
 }
 
 // ── Civic context (from ?rep= URL param — MN Civic Profile handoff) ──────
@@ -1214,6 +1282,143 @@ if ("serviceWorker" in navigator) {
         sessionStorage.setItem("abe-install-dismissed", "1");
     });
 })();
+
+// ── Action Challenge Engine ───────────────────────────────────────────────
+
+const ACTION_TOPICS = [
+    {
+        id: "voting",
+        re: /\b(vote|voting|election|ballot|register|polling place|voter id|electoral|suppress|gerrymandr)\b/i,
+        subhead: "This claim is about voting and elections — the most direct power you have.",
+        challenge: "Knowing this, <strong>are you registered?</strong> Is everyone you know? Elections are decided by who shows up.",
+        links: [
+            { icon: "🗳️", title: "Check your registration", desc: "Vote.gov — official federal registration portal", url: "https://vote.gov" },
+            { icon: "📍", title: "Find your polling place", desc: "Vote.gov — locate where you vote", url: "https://vote.gov/find-your-polling-place/" },
+            { icon: "📋", title: "See what's on your ballot", desc: "BallotReady — research your full ballot before you go", url: "https://www.ballotready.org" },
+        ]
+    },
+    {
+        id: "congress",
+        re: /\b(congress|senate|senator|representative|rep\.|house of representatives|bill|legislation|vote[ds]|law|passed|filibuster|amendment|committee)\b/i,
+        subhead: "This claim involves Congress — the people you elected to represent you.",
+        challenge: "Do you know how your representatives voted on this? <strong>They work for you.</strong> Act like it.",
+        links: [
+            { icon: "🏛️", title: "Look up any bill or vote", desc: "Congress.gov — official legislative records", url: "https://www.congress.gov" },
+            { icon: "📞", title: "Find and contact your reps", desc: "House.gov — find your House representative", url: "https://www.house.gov/representatives/find-your-representative" },
+            { icon: "📞", title: "Contact your senators", desc: "Senate.gov — find your two U.S. Senators", url: "https://www.senate.gov/senators/senators-contact.htm" },
+            { icon: "💰", title: "See who funds your reps", desc: "FEC.gov — official campaign finance records", url: "https://www.fec.gov/data/" },
+        ]
+    },
+    {
+        id: "healthcare",
+        re: /\b(healthcare|health care|medicare|medicaid|insurance|aca|obamacare|prescription|drug price|hospital|mental health|vaccine|uninsured)\b/i,
+        subhead: "This claim touches healthcare — something that affects every single person.",
+        challenge: "Healthcare policy is made by the people you vote for. <strong>What do your reps' voting records actually show?</strong>",
+        links: [
+            { icon: "🏛️", title: "Find healthcare votes in Congress", desc: "Congress.gov — search healthcare bills and voting records", url: "https://www.congress.gov/search?q=%7B%22source%22%3A%22legislation%22%2C%22search%22%3A%22healthcare%22%7D" },
+            { icon: "💰", title: "Who funds healthcare legislation", desc: "FEC.gov — follow the money behind healthcare policy", url: "https://www.fec.gov/data/" },
+            { icon: "📞", title: "Tell your rep where you stand", desc: "House.gov — find and contact your representative", url: "https://www.house.gov/representatives/find-your-representative" },
+        ]
+    },
+    {
+        id: "money",
+        re: /\b(billion|trillion|million dollar|budget|deficit|debt|spending|tax|subsidie|grant|contract|federal fund|appropriat)\b/i,
+        subhead: "This claim involves public money — your money.",
+        challenge: "This is taxpayer money. <strong>You have a right to know exactly where it goes.</strong> Go look.",
+        links: [
+            { icon: "💵", title: "Track federal spending", desc: "USASpending.gov — every federal contract and grant", url: "https://www.usaspending.gov" },
+            { icon: "💰", title: "Federal campaign finance", desc: "FEC.gov — who is funding the politicians making these decisions", url: "https://www.fec.gov/data/" },
+            { icon: "📊", title: "Federal budget data", desc: "USAFacts.org — nonpartisan federal budget breakdown", url: "https://usafacts.org/government-finances/" },
+        ]
+    },
+    {
+        id: "environment",
+        re: /\b(climate|environment|pollution|epa|emissions|carbon|fossil fuel|clean energy|renewable|oil|gas|drilling|wildfire|flood|weather)\b/i,
+        subhead: "This claim is about the environment — something inherited by every future generation.",
+        challenge: "Environmental policy is set by officials you can vote out. <strong>Do you know their record?</strong>",
+        links: [
+            { icon: "🏛️", title: "Find environmental votes", desc: "Congress.gov — search environmental legislation", url: "https://www.congress.gov/search?q=%7B%22source%22%3A%22legislation%22%2C%22search%22%3A%22environment%22%7D" },
+            { icon: "📞", title: "Contact your representatives", desc: "House.gov — tell them where you stand", url: "https://www.house.gov/representatives/find-your-representative" },
+            { icon: "📋", title: "EPA public records", desc: "EPA.gov — enforcement actions and regulatory data", url: "https://www.epa.gov/enviro" },
+        ]
+    },
+    {
+        id: "economy",
+        re: /\b(economy|jobs|unemployment|wage|inflation|cost of living|poverty|income|gdp|recession|trade|tariff|import|export|workers)\b/i,
+        subhead: "This claim is about the economy — the thing that affects your daily life most directly.",
+        challenge: "Economic policy is set by people you elect. <strong>Does their record match their promises?</strong>",
+        links: [
+            { icon: "📊", title: "Official economic data", desc: "BLS.gov — Bureau of Labor Statistics, straight from the source", url: "https://www.bls.gov" },
+            { icon: "💵", title: "Federal spending breakdown", desc: "USASpending.gov — where the money actually goes", url: "https://www.usaspending.gov" },
+            { icon: "🏛️", title: "Economic legislation in Congress", desc: "Congress.gov — find bills affecting wages, trade, jobs", url: "https://www.congress.gov/search?q=%7B%22source%22%3A%22legislation%22%2C%22search%22%3A%22economy%20jobs%22%7D" },
+        ]
+    },
+    {
+        id: "rights",
+        re: /\b(civil rights|voting rights|free speech|first amendment|second amendment|abortion|reproductive|lgbtq|discrimination|equal|justice|police|prison|criminal justice|constitution)\b/i,
+        subhead: "This claim involves constitutional rights — the foundation of what you're owed as a citizen.",
+        challenge: "Rights are not self-enforcing. <strong>Who is fighting for yours, and who isn't?</strong>",
+        links: [
+            { icon: "🏛️", title: "Find rights-related legislation", desc: "Congress.gov — bills affecting civil and constitutional rights", url: "https://www.congress.gov" },
+            { icon: "⚖️", title: "Federal court records", desc: "CourtListener.com — free access to federal court opinions", url: "https://www.courtlistener.com" },
+            { icon: "📞", title: "Contact your representatives", desc: "Senate.gov — find your senators", url: "https://www.senate.gov/senators/senators-contact.htm" },
+        ]
+    },
+    {
+        id: "education",
+        re: /\b(school|education|student|teacher|college|university|loan|curriculum|book ban|library|public school|charter|voucher)\b/i,
+        subhead: "This claim is about education — the future of the next generation.",
+        challenge: "School boards, state legislatures, and Congress all control education policy. <strong>Do you know who yours are?</strong>",
+        links: [
+            { icon: "🏛️", title: "Education legislation", desc: "Congress.gov — federal education bills and votes", url: "https://www.congress.gov/search?q=%7B%22source%22%3A%22legislation%22%2C%22search%22%3A%22education%22%7D" },
+            { icon: "📊", title: "Education spending data", desc: "USAFacts.org — how education dollars are actually spent", url: "https://usafacts.org/topics/education/" },
+            { icon: "📞", title: "Contact your rep", desc: "House.gov — find your House representative", url: "https://www.house.gov/representatives/find-your-representative" },
+        ]
+    },
+];
+
+// Default actions when no specific topic is detected
+const ACTION_DEFAULT = {
+    subhead: "Every claim has a source, a context, and someone responsible for it.",
+    challenge: "Abe told you what the language shows. <strong>Now go find the primary source yourself.</strong> Don't outsource your judgment.",
+    links: [
+        { icon: "🏛️", title: "Search Congress.gov", desc: "Official legislation, votes, and congressional records", url: "https://www.congress.gov" },
+        { icon: "💰", title: "Follow the money", desc: "FEC.gov — official federal campaign finance database", url: "https://www.fec.gov/data/" },
+        { icon: "💵", title: "Track federal spending", desc: "USASpending.gov — contracts, grants, every dollar", url: "https://www.usaspending.gov" },
+        { icon: "🗳️", title: "Know your vote", desc: "Vote.gov — registration, polling, your ballot", url: "https://vote.gov" },
+    ]
+};
+
+function detectActionTopic(claim) {
+    for (const topic of ACTION_TOPICS) {
+        if (topic.re.test(claim)) return topic;
+    }
+    return ACTION_DEFAULT;
+}
+
+function renderActionBlock(claim, verdict) {
+    const actionEl = $("actionBlock");
+    if (!actionEl) return;
+
+    // Don't show for REFUSED
+    if (verdict === "REFUSED") { actionEl.style.display = "none"; return; }
+
+    const topic = detectActionTopic(claim || "");
+
+    $("actionSubhead").textContent = topic.subhead;
+    $("actionChallenge").innerHTML = "— " + topic.challenge;
+
+    $("actionLinks").innerHTML = topic.links.map(l => `
+        <a class="action-link" href="${l.url}" target="_blank" rel="noopener">
+          <span class="action-link-icon">${l.icon}</span>
+          <span class="action-link-body">
+            <div class="action-link-title">${l.title}</div>
+            <div class="action-link-desc">${l.desc}</div>
+          </span>
+        </a>`).join("");
+
+    actionEl.style.display = "block";
+}
 
 // ── Browser compatibility check ───────────────────────────────────────────
 (function checkBrowser() {
