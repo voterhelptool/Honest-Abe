@@ -16,6 +16,16 @@
  * Provider chain: Puter → Gemini → Groq → Pattern (offline fallback)
  */
 
+// ── SECURITY CONVENTIONS — enforced by convention, not tooling ───────────
+// RULE: Never use innerHTML with any value that comes from:
+//   - AI/LLM responses (result.*, parsed.*)
+//   - User input (claim, claimInput.value)
+//   - URL parameters (?rep=, ?q=)
+// Use textContent or createElement/appendChild for all dynamic content.
+// ACTION_TOPICS and ACTION_DEFAULT are hardcoded — innerHTML is safe there only.
+// If you add innerHTML anywhere new, add a comment: // SAFE: hardcoded/trusted
+// ─────────────────────────────────────────────────────────────────────────
+
 // ── PROVIDER REGISTRY ─────────────────────────────────────────────────────
 function getProviders() {
     return [
@@ -60,7 +70,23 @@ const SOURCES = {
     opensecrets: { name: "OpenSecrets",              url: "https://www.opensecrets.org",          lean: "Center" },
 };
 
-function getSourcesForClaim(claimType, keywords = []) {
+// Detect if a claim is personal/subjective/unverifiable by nature
+// These have no business being routed to PolitiFact or FactCheck
+function isUnverifiableClaim(claim, claimType) {
+    const c = claim.toLowerCase();
+    // Subjective taste, feeling, preference, hypothetical, nonsense
+    if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim)) return true;
+    if (/\b(best|worst|favorite|ugliest|prettiest|most beautiful|funniest)\b/.test(c) && !/\b(president|senator|congress|policy|law|economy)\b/.test(c)) return true;
+    if (/\b(god|heaven|hell|soul|afterlife|angels|demons|supernatural|spiritual|divine)\b/.test(c)) return true;
+    if (/\b(bigfoot|unicorn|aliens built|flat earth|lizard people|chemtrail|illuminati)\b/.test(c)) return true;
+    if (claimType === "opinion" && !/\b(president|senator|congress|policy|law|economy|war|climate|vaccine|election)\b/.test(c)) return true;
+    return false;
+}
+
+function getSourcesForClaim(claimType, keywords = [], claim = "") {
+    // Personal/subjective/nonsense claims get no sources
+    if (claimType === "subjective" || isUnverifiableClaim(claim, claimType)) return [];
+
     const kw = keywords.join(" ").toLowerCase();
     if (/vaccine|covid|virus|disease|health|medical/.test(kw))     return [SOURCES.cdc,        SOURCES.nih,         SOURCES.pubmed];
     if (/election|vote|ballot|candidate|congress|senate/.test(kw)) return [SOURCES.ballotpedia, SOURCES.factcheck,   SOURCES.ap];
@@ -89,10 +115,13 @@ function getSourcesForClaim(claimType, keywords = []) {
 // ── CLAIM TRIAGE ─────────────────────────────────────────────────────────
 function triageClaim(claim) {
     const c = claim.toLowerCase().trim();
-    // Questions first — "who is", "what is", "when did", "how does", "why did", "where is", "can you tell me", "?"
+    // Questions first
     if (/^(who|what|when|where|why|how|is|are|was|were|did|does|do|can|could|should|would|will)\b/.test(c)) return "question";
     if (/\?$/.test(c.trim())) return "question";
     if (/^(tell me|explain|describe|give me|show me)\b/.test(c)) return "question";
+    // Subjective/personal — catch before any civic/factual routing
+    if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim)) return "subjective";
+    if (/\b(my favorite|i prefer|i like|i love|i hate|i enjoy)\b/i.test(c) && !/\b(president|senator|policy|law|vote|congress)\b/i.test(c)) return "subjective";
     if (/\b(\d+%|\d+ percent|statistics|data shows|studies|research shows|according to)\b/.test(c)) return "statistical";
     if (/\b(in \d{4}|during the|historically|century|decade|era|president .* said)\b/.test(c))      return "historical";
     if (/\b(i think|i believe|in my opinion|we should|should be|it's wrong|must|ought)\b/.test(c))  return "opinion";
@@ -151,6 +180,7 @@ KEY ENTITIES: ${dna.entities.join(", ") || "none identified"}
 
 FIRST — CLASSIFY THE CLAIM:
 - Is this a nonsense/joke/non-claim with nothing to analyze? → set verdict to "REFUSED", explain briefly with personality.
+- Is this a subjective preference, taste, or personal feeling with no factual basis? → set verdict to "SUBJECTIVE", explain plainly that Abe analyzes evidence not personal opinion.
 - Is this a factual claim? → verify it against the record.
 - Is this a value judgment or opinion? → separate the factual record from the moral conclusion, then give both.
 - Is this factually true but ethically/morally problematic? → verdict "FACTUALLY TRUE / MORALLY DISPUTED", explain both layers.
@@ -179,7 +209,7 @@ STEP 6 — GUIDE: What is weakest in this analysis? What should the user verify?
 
 Respond ONLY with valid JSON — no text before or after, no markdown fences:
 {
-  "verdict": "TRUE" | "MOSTLY TRUE" | "MISLEADING" | "MOSTLY FALSE" | "FALSE" | "OPINION" | "UNVERIFIABLE" | "FACTUALLY TRUE / MORALLY DISPUTED" | "REFUSED",
+  "verdict": "TRUE" | "MOSTLY TRUE" | "MISLEADING" | "MOSTLY FALSE" | "FALSE" | "OPINION" | "SUBJECTIVE" | "UNVERIFIABLE" | "FACTUALLY TRUE / MORALLY DISPUTED" | "REFUSED",
   "confidence": 0.0-1.0,
   "confidenceLabel": "HIGH" | "MODERATE" | "LOW" | "INFERENCE ONLY",
   "neutralRestatement": "The underlying facts stripped of framing. 2-3 sentences. If REFUSED, a brief deadpan/personality-driven refusal in Abe's voice.",
@@ -362,6 +392,14 @@ function _neutralize(claim) {
 function _deriveVerdict(claim, flags, manip, claimType, facts, specificity) {
     const lower = claim.toLowerCase();
 
+    // Subjective taste/preference/feeling — not a factual claim, can't be analyzed
+    if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim))
+        return { verdict: "SUBJECTIVE", confidence: 0.99, reason: "This is a subjective sensory preference — not a factual claim. Abe analyzes evidence, not taste buds. There's nothing to fact-check here." };
+
+    // Pure nonsense / unfalsifiable personal opinion with no civic dimension
+    if (/\b(my favorite|i prefer|i like|i love|i hate|i enjoy)\b/i.test(claim) && !/\b(president|senator|policy|law|vote|congress)\b/i.test(claim))
+        return { verdict: "SUBJECTIVE", confidence: 0.99, reason: "Personal preference — not a factual claim. Abe can't verify what you enjoy. That's between you and your choices." };
+
     // Nonsense / unfalsifiable
     if (/\b(bigfoot|flat earth|chemtrail|lizard people|microchip|5g causes|illuminati|deep state controls everything)\b/i.test(claim))
         return { verdict: "FALSE", confidence: 0.88, reason: "Claim matches well-documented conspiracy theory with no credible evidentiary basis." };
@@ -542,7 +580,7 @@ class NLPEngine {
             result = patternAnalysis(claim, claimType, dna);
         }
 
-        const sources    = getSourcesForClaim(claimType, dna.keywords);
+        const sources    = getSourcesForClaim(claimType, dna.keywords, claim);
         // Support both nested dimensions object and flat fields (older AI responses)
         const d = result.dimensions || {};
         const dimensions = {
