@@ -482,7 +482,25 @@ class NLPEngine {
      * @param {object} [context]
      * @param {object} [context.civic] — rep data injected from civic profile URL params
      */
+    _sanitizeClaim(raw) {
+        // Strip prompt injection attempts — these are not claims, they are attacks
+        const injectionPatterns = [
+            /ignore (all |previous |above |prior )?instructions?/gi,
+            /forget (everything|your instructions|what i said)/gi,
+            /you are now|pretend (to be|you are)|act as if/gi,
+            /jailbreak|dan mode|developer mode|god mode/gi,
+            /system prompt|disregard (your|all|previous)/gi,
+            /\[\[.*?\]\]|\{\{.*?\}\}/g,  // template injection
+        ];
+        let clean = raw.slice(0, 2000); // hard length cap
+        for (const p of injectionPatterns) {
+            clean = clean.replace(p, "[removed]");
+        }
+        return clean.trim();
+    }
+
     async analyze(claim, context = {}) {
+        claim = this._sanitizeClaim(claim);
         const key = claim.trim().toLowerCase() + "|" + (context.civic?.name || "") + "|" + (context.civic?.district || "") + "|" + (context.civic?.state || "");
         if (this._cache.has(key)) return this._cache.get(key);
 
