@@ -771,6 +771,7 @@
     </div>
   <nav class="abe-nav" aria-label="Site navigation">
     <a href="https://github.com/voterhelptool/Honest-Abe" target="_blank" rel="noopener" aria-label="View source on GitHub (opens in new tab)">GitHub</a>
+    <a href="https://puter.com" target="_blank" rel="noopener" aria-label="Get a free Puter account (opens in new tab)">Puter</a>
     <a href="#about">About</a>
   </nav>
 </header>
@@ -1056,6 +1057,8 @@ function verdictClass(v) {
     if (u === "MOSTLY FALSE")                  return "fail";
     if (u === "FACTUALLY TRUE / MORALLY DISPUTED") return "warn";
     if (u === "REFUSED")                       return "unknown";
+    if (u === "SUBJECTIVE")                    return "unknown";
+    if (u === "NONSENSE")                      return "unknown";
     if (u === "FALSE")               return "fail";
     if (u === "OPINION")             return "warn";
     if (u === "UNVERIFIABLE")        return "unknown";
@@ -1406,6 +1409,7 @@ $("analyzeBtn").addEventListener("click", async () => {
     $("results").style.display = "none";
     resetCredibilityIndex();
 
+    // Gate already validated Puter session — no need to re-check here
     const msgs = ["Abe is thinking…", "Checking sources…", "Almost there…"];
     let mi = 0;
     const ticker = setInterval(() => {
@@ -1682,8 +1686,11 @@ function renderActionBlock(claim, verdict, result) {
     actionEl.style.display = "block";
 }
 
-// ── Puter sign-in banner ──────────────────────────────────────────────────
-// ── Sign-in Gate ─────────────────────────────────────────────────────────
+// ── Puter Auth — single consolidated flow ────────────────────────────────
+// One gate. One source of truth. Validates by pinging puter.ai not just puter.auth.
+// Reason: isSignedIn() can return true for a ghost/gmail-linked session that
+// cannot actually call puter.ai.chat — we catch that here before nlp fires.
+
 (async function initSignInGate() {
     const gate    = document.getElementById("abe-signin-gate");
     const app     = document.getElementById("abe-app");
@@ -1693,26 +1700,45 @@ function renderActionBlock(claim, verdict, result) {
     const desc    = document.getElementById("gateDesc");
     if (!gate || !app) return;
 
-    function showApp()  { gate.style.display = "none"; app.style.display = "block"; }
-    function showGate() { gate.style.display = "flex"; app.style.display = "none"; }
+    function showApp()  { gate.style.display = "none";  app.style.display = "block"; }
+    function showGate() { gate.style.display = "flex";  app.style.display = "none";  }
 
-    // Always attach button listeners first — before any early returns
+    // Validate session is real by pinging puter.ai — not just puter.auth
+    // This catches ghost sessions from gmail/OAuth account confusion
+    async function validatePuterSession() {
+        try {
+            if (typeof puter === "undefined" || typeof puter.ai?.chat !== "function") return false;
+            const signedIn = await puter.auth.isSignedIn();
+            if (!signedIn) return false;
+            // Actually test the AI endpoint — if this throws, session is broken
+            await Promise.race([
+                puter.ai.chat(".", { model: "claude-haiku-4-5-20251001" }),
+                new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000))
+            ]);
+            return true;
+        } catch(e) {
+            console.log("[Honest Abe] Puter session validation failed:", e.message);
+            try { await puter.auth.signOut(); } catch(_) {}
+            return false;
+        }
+    }
+
     signBtn.addEventListener("click", async () => {
         if (typeof puter === "undefined" || typeof puter.auth?.signIn !== "function") {
-            // Puter not available — just show app
             showApp(); return;
         }
         signBtn.disabled = true;
         signBtn.textContent = "Signing in…";
         try {
             await puter.auth.signIn();
-            const ok = await puter.auth.isSignedIn();
-            if (ok) { showApp(); return; }
+            const valid = await validatePuterSession();
+            if (valid) { showApp(); return; }
+            // Signed in but AI ping failed — account issue
+            title.textContent = "Account issue detected";
+            desc.textContent = "Puter signed in but AI access failed. This can happen if your Puter account is linked to Gmail. Try creating a standalone Puter account at puter.com, or skip to use pattern analysis.";
         } catch(e) { /* user closed popup */ }
         signBtn.disabled = false;
         signBtn.textContent = "Sign in with Puter — it's free";
-        title.textContent = "Sign in to continue";
-        desc.innerHTML = "Looks like sign-in was cancelled. Try again, or skip to use pattern analysis.";
     });
 
     skipBtn.addEventListener("click", () => {
@@ -1720,83 +1746,17 @@ function renderActionBlock(claim, verdict, result) {
         showApp();
     });
 
-    // Already skipped this session — go straight to app
-    if (sessionStorage.getItem("abe-puter-skipped")) {
-        showApp(); return;
-    }
+    // Already skipped this session
+    if (sessionStorage.getItem("abe-puter-skipped")) { showApp(); return; }
 
-    // Puter not loaded — show gate so user can skip or try later
-    if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") {
-        showGate(); return;
-    }
+    // Puter not loaded at all
+    if (typeof puter === "undefined") { showGate(); return; }
 
-    // Check existing session
-    try {
-        const signedIn = await puter.auth.isSignedIn();
-        if (signedIn) {
-            // Validate session is still fresh
-            try {
-                await puter.auth.getUser();
-                showApp(); return; // Valid session — skip gate
-            } catch(e) {
-                // Stale session — sign out and fall through to gate
-                try { await puter.auth.signOut(); } catch(_) {}
-            }
-        }
-        showGate();
-    } catch(e) {
-        // Auth check threw — show gate, not app (safer)
-        showGate();
-    }
-})();
+    // Validate existing session — catches gmail/ghost account issues
+    const valid = await validatePuterSession();
+    if (valid) { showApp(); return; }
 
-(function initPuterBanner() {
-    const banner   = document.getElementById("abe-puter-banner");
-    const signBtn  = document.getElementById("puter-signin-btn");
-    const skipBtn  = document.getElementById("puter-skip-btn");
-    if (!banner || !signBtn || !skipBtn) return;
-
-    async function checkPuter() {
-        if (typeof puter === "undefined" || typeof puter.auth?.isSignedIn !== "function") return;
-        if (sessionStorage.getItem("abe-puter-skipped")) return;
-        try {
-            const signedIn = await puter.auth.isSignedIn();
-            if (!signedIn) { banner.classList.add("visible"); return; }
-
-            // Signed in — validate session is fresh with a ping
-            try {
-                await puter.auth.getUser();
-                // Valid session — stay hidden
-            } catch(e) {
-                // Stale session (401) — sign out and prompt fresh login
-                console.log("[Honest Abe] Stale Puter session — clearing and prompting sign-in");
-                try { await puter.auth.signOut(); } catch(_) {}
-                banner.classList.add("visible");
-            }
-        } catch(e) { /* Puter unavailable */ }
-    }
-
-    if (typeof puter !== "undefined") {
-        checkPuter();
-    } else {
-        window.addEventListener("load", checkPuter);
-    }
-
-    signBtn.addEventListener("click", async () => {
-        try {
-            await puter.auth.signIn();
-            const signedIn = await puter.auth.isSignedIn();
-            if (signedIn) {
-                banner.classList.remove("visible");
-                if (typeof nlp !== "undefined") nlp._active = null;
-            }
-        } catch(e) { /* user closed popup */ }
-    });
-
-    skipBtn.addEventListener("click", () => {
-        sessionStorage.setItem("abe-puter-skipped", "1");
-        banner.classList.remove("visible");
-    });
+    showGate();
 })();
 
 // ── Browser compatibility check ───────────────────────────────────────────
