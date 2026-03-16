@@ -1085,9 +1085,11 @@ function renderResult(result) {
     $("verdictSummary").textContent = result.plainSummary || result.summary || "";
 
     // REFUSED or ANSWERED — hide credibility index, meaningless for non-claims
-    const isRefused = result.verdict === "REFUSED";
-    const isAnswered = result.verdict === "ANSWERED";
-    $("credibility-index").style.display = (isRefused || isAnswered) ? "none" : "block";
+    const isRefused   = result.verdict === "REFUSED";
+    const isAnswered  = result.verdict === "ANSWERED";
+    const isSubjective = result.verdict === "SUBJECTIVE";
+    const hideExtras  = isRefused || isAnswered || isSubjective;
+    $("credibility-index").style.display = hideExtras ? "none" : "block";
 
     // ── CONFIDENCE LABEL ──
     const cl = (result.confidenceLabel || "").toUpperCase();
@@ -1112,7 +1114,7 @@ function renderResult(result) {
     // ── NEUTRAL RESTATEMENT ──
     const neutral = result.neutralRestatement;
     const neutralEl = $("neutralBlock");
-    if (neutral) {
+    if (neutral && !isSubjective) {
         $("neutralText").textContent = neutral;
         neutralEl.style.display = "block";
     } else {
@@ -1197,7 +1199,7 @@ function renderResult(result) {
     // ── PATH FORWARD ──
     const path = result.pathForward;
     const pathEl = $("pathBlock");
-    if (path) {
+    if (path && !isSubjective) {
         $("pathText").textContent = path;
         pathEl.style.display = "block";
     } else {
@@ -1207,7 +1209,7 @@ function renderResult(result) {
     // ── SOURCES ──
     const sources = result.sources || [];
     const srcEl = $("sourcesBlock");
-    if (sources.length) {
+    if (sources.length && !isSubjective) {
         const chips = $("sourceChips");
         chips.innerHTML = "";
         sources.forEach(s => {
