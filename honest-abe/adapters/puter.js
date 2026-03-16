@@ -10,14 +10,9 @@ const PuterAdapter = {
     async available() {
         if (typeof puter === "undefined" || typeof puter.ai?.chat !== "function") return false;
         try {
-            const signedIn = await puter.auth.isSignedIn();
-            if (signedIn) return true;
-            // Not signed in — trigger sign-in popup and WAIT for it
-            await puter.auth.signIn();
-            // Verify it actually worked
+            // Only check — never trigger sign-in here. The gate owns that flow.
             return !!(await puter.auth.isSignedIn());
         } catch(e) {
-            // User closed popup or auth failed — fall through to next provider
             return false;
         }
     },
