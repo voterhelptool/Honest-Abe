@@ -19,6 +19,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.puter.com; frame-ancestors 'none';">
+<meta http-equiv="X-Frame-Options" content="DENY">
 <meta name="description" content="Honest Abe tells you if a claim is TRUE, FALSE, or MISLEADING. Paste any headline, quote, or statement — get a plain-English verdict with reasoning. Free, no account, no ads. Not affiliated with any election audit tool.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Independent civic technology project">
@@ -1133,9 +1135,21 @@ function renderResult(result) {
         const pill = $("manipPill");
         pill.textContent = msPct < 20 ? "Low risk" : msPct < 55 ? "Medium risk" : "High risk";
         pill.className = "manip-score-pill " + (msPct < 20 ? "low" : msPct < 55 ? "medium" : "high");
-        $("manipTechniques").innerHTML = techniques.length
-            ? techniques.map(t => `<div class="manip-technique">⚠ ${t}</div>`).join("")
-            : `<div class="manip-none">No manipulation techniques detected.</div>`;
+        const techEl = $("manipTechniques");
+        techEl.innerHTML = "";
+        if (techniques.length) {
+            techniques.forEach(t => {
+                const d = document.createElement("div");
+                d.className = "manip-technique";
+                d.textContent = "⚠ " + t;
+                techEl.appendChild(d);
+            });
+        } else {
+            const d = document.createElement("div");
+            d.className = "manip-none";
+            d.textContent = "No manipulation techniques detected.";
+            techEl.appendChild(d);
+        }
         manipEl.style.display = "block";
     } else {
         manipEl.style.display = "none";
@@ -1147,7 +1161,14 @@ function renderResult(result) {
 
     // ── FRAMING FLAGS ──
     const flags = result.framingFlags ?? [];
-    $("flagsBox").innerHTML = flags.map(f => `<div class="flag-item">${f}</div>`).join("");
+    const flagsBox = $("flagsBox");
+    flagsBox.innerHTML = "";
+    flags.forEach(f => {
+        const d = document.createElement("div");
+        d.className = "flag-item";
+        d.textContent = f;
+        flagsBox.appendChild(d);
+    });
 
     // ── INCENTIVE BIAS ──
     const bias = result.incentiveBias || null;
@@ -1184,12 +1205,23 @@ function renderResult(result) {
     const sources = result.sources || [];
     const srcEl = $("sourcesBlock");
     if (sources.length) {
-        $("sourceChips").innerHTML = sources.map(s =>
-            `<a class="source-chip" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} — ${s.lean} (opens in new tab)">
-                ${s.name}
-                <span class="lean-badge">${s.lean}</span>
-            </a>`
-        ).join("");
+        const chips = $("sourceChips");
+        chips.innerHTML = "";
+        sources.forEach(s => {
+            const a = document.createElement("a");
+            a.className = "source-chip";
+            // Only allow http/https URLs
+            a.href = /^https?:\/\//.test(s.url) ? s.url : "#";
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.setAttribute("aria-label", `${s.name} — ${s.lean} (opens in new tab)`);
+            a.textContent = s.name;
+            const badge = document.createElement("span");
+            badge.className = "lean-badge";
+            badge.textContent = s.lean;
+            a.appendChild(badge);
+            chips.appendChild(a);
+        });
         srcEl.style.display = "block";
     } else {
         srcEl.style.display = "none";
@@ -1231,9 +1263,19 @@ function renderCredibilityIndex(result) {
             const vpct = Math.round(val * 100);
             const row = document.createElement("div");
             row.className = "ci-dim-row";
-            row.innerHTML = `<div class="ci-dim-label">${label}</div>
-                <div class="ci-dim-track"><div class="ci-dim-bar" data-pct="${vpct}"></div></div>
-                <div class="ci-dim-pct">${vpct}%</div>`;
+            const lbl = document.createElement("div");
+            lbl.className = "ci-dim-label";
+            lbl.textContent = label;
+            const track = document.createElement("div");
+            track.className = "ci-dim-track";
+            const bar = document.createElement("div");
+            bar.className = "ci-dim-bar";
+            bar.dataset.pct = vpct;
+            track.appendChild(bar);
+            const pct = document.createElement("div");
+            pct.className = "ci-dim-pct";
+            pct.textContent = vpct + "%";
+            row.appendChild(lbl); row.appendChild(track); row.appendChild(pct);
             dimsEl.appendChild(row);
         });
         requestAnimationFrame(() => {
@@ -1302,8 +1344,21 @@ const ABE_PROVIDER_META = {
         const params = new URLSearchParams(window.location.search);
         const raw = params.get("rep");
         if (!raw) return;
-        const rep = JSON.parse(decodeURIComponent(raw));
-        if (!rep?.name) return;
+        const raw_parsed = JSON.parse(decodeURIComponent(raw));
+        if (!raw_parsed?.name) return;
+        // Whitelist — only allow known safe scalar fields, no arbitrary keys
+        const rep = {
+            name:          String(raw_parsed.name        || "").slice(0, 100),
+            party:         String(raw_parsed.party       || "").slice(0, 50),
+            state:         String(raw_parsed.state       || "").slice(0, 2),
+            district:      String(raw_parsed.district    || "").slice(0, 20),
+            fec_total:     String(raw_parsed.fec_total   || "").slice(0, 30),
+            top_donors:    String(raw_parsed.top_donors  || "").slice(0, 200),
+            bills_count:   String(raw_parsed.bills_count || "").slice(0, 20),
+            committees:    String(raw_parsed.committees  || "").slice(0, 200),
+            ballotpedia_url: /^https:\/\/ballotpedia\.org\//.test(raw_parsed.ballotpedia_url || "")
+                ? raw_parsed.ballotpedia_url : "",
+        };
         window._abeLoadedCivicContext = rep;
         const banner = $("abe-civic-banner");
         const repSpan = $("abe-civic-banner-rep");
