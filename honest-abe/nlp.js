@@ -560,7 +560,7 @@ class NLPEngine {
                 if (!avail) { this._log(adapter.name, "UNAVAILABLE"); continue; }
 
                 this._log(adapter.name, "ATTEMPTING", claim.slice(0, 60));
-                const timeout = adapter.name === "Puter.js" ? 30000 : 15000;
+                const timeout = adapter.name === "Puter.js" ? 60000 : 15000;
                 const raw     = await this._timeout(adapter.query(prompt), timeout);
                 this._log(adapter.name, "RAW_RESPONSE", typeof raw === "string" ? raw.slice(0, 800) : JSON.stringify(raw).slice(0, 800));
                 const parsed  = this._parse(raw, adapter.name);
