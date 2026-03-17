@@ -154,6 +154,7 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: center;
   }
   .principle {
     font-size: 12px; /* minimum readable, was 9px */
@@ -660,19 +661,22 @@
     border-bottom: 2px solid var(--gold);
     padding: 32px max(24px, 5vw);
     margin: 0;
+    text-align: center;
   }
   .how-it-works h2 {
     font-family: 'Playfair Display', serif;
     font-size: clamp(18px, 3vw, 24px);
     color: var(--gold);
     margin: 0 0 16px 0;
+    text-align: center;
   }
   .how-it-works p {
     color: var(--parchment);
     font-size: 14px;
     line-height: 1.7;
-    margin: 0 0 12px 0;
+    margin: 0 auto 12px auto;
     max-width: 720px;
+    text-align: center;
   }
   .how-it-works .provider-chain {
     display: flex;
@@ -999,15 +1003,12 @@
 <section class="how-it-works" aria-labelledby="how-heading">
   <h2 id="how-heading">How Honest Abe Works</h2>
   <p>
-<p>
     Every claim is classified, broken into checkable pieces, and analyzed for language patterns, framing,
     and manipulation techniques. You get a verdict, a confidence level, and sources labeled by political lean.
     If a manipulation technique is detected, it's named and explained — not just flagged. If something can't
     be verified, Abe says why — and gives its best inference rather than going silent.
   </p>
-  <p>
-    No account. No data collected. No ads.
-  </p>
+  <p>No account. No data collected. No ads.</p>
   <p>
     Analysis runs through free AI when available. If nothing's reachable, pattern matching runs locally
     on your device — it always works offline.
