@@ -19,7 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a1a2e">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.puter.com wss://*.puter.com; frame-ancestors 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.puter.com wss://*.puter.com; frame-ancestors 'none'; upgrade-insecure-requests;">
+<!-- NOTE: unsafe-inline is required because all JS/CSS is inline in this single-file architecture.
+     Mitigation: all dynamic content uses textContent not innerHTML.
+     Future path: extract JS to external files and use nonce-based CSP. -->
 <meta http-equiv="X-Frame-Options" content="DENY">
 <meta name="description" content="Honest Abe tells you if a claim is TRUE, FALSE, or MISLEADING. Paste any headline, quote, or statement — get a plain-English verdict with reasoning. Free, no account, no ads. Not affiliated with any election audit tool.">
 <meta name="robots" content="index, follow">
@@ -1402,7 +1405,34 @@ function clearCivicContext() {
     if (banner) banner.classList.remove("visible");
 }
 
+// ── Rate limiting — prevent Puter credit drain ────────────────────────────
+const _abeRateLimit = (() => {
+    const WINDOW_MS  = 60000; // 1 minute
+    const MAX_CALLS  = 10;    // max 10 analyses per minute
+    const timestamps = [];
+    return function() {
+        const now = Date.now();
+        while (timestamps.length && now - timestamps[0] > WINDOW_MS) timestamps.shift();
+        if (timestamps.length >= MAX_CALLS) return false;
+        timestamps.push(now);
+        return true;
+    };
+})();
+
+let _abeAnalyzing = false; // debounce flag
+
 $("analyzeBtn").addEventListener("click", async () => {
+    if (_abeAnalyzing) return; // debounce — prevent double-submit
+    if (!_abeRateLimit()) {
+        $("providerStatus").textContent = "Too many requests — please wait a moment.";
+        return;
+    }
+    if (_abeAnalyzing) return;
+    if (!_abeRateLimit()) {
+        $("providerStatus").textContent = "Too many requests — please wait a moment.";
+        return;
+    }
+    _abeAnalyzing = true;
     const claim = $("claimInput").value.trim();
     if (!claim) return;
     $("analyzeBtn").disabled = true;
@@ -1439,6 +1469,7 @@ $("analyzeBtn").addEventListener("click", async () => {
         $("verdictLabel").textContent   = "UNVERIFIABLE";
         $("verdictSummary").textContent = "Analysis failed. Please verify with primary sources.";
     } finally {
+        _abeAnalyzing = false;
         $("analyzeBtn").disabled = false;
         $("analyzeBtn").textContent = "Analyze";
     }
