@@ -626,35 +626,47 @@ class NLPEngine {
         try {
             let clean = raw
                 .replace(/<think>[\s\S]*?<\/think>/gi, "")
-                .replace(/```json|```/g, "")
+                .replace(/```json\s*/gi, "")   // strip ```json with any trailing whitespace/newline
+                .replace(/```\s*/g, "")         // strip closing ``` with any trailing whitespace
                 .trim();
             const match = clean.match(/\{[\s\S]*\}/);
             if (match) clean = match[0];
             const p = JSON.parse(clean);
+            // AI returns either "verdict" or "verdictLabel" — normalize both
+            const verdict = p.verdict || p.verdictLabel || null;
             return {
-                verdictLabel:          p.verdictLabel || null,
+                verdict,
+                verdictLabel:          verdict,
                 confidence:            this._clamp(p.confidence),
                 confidenceLabel:       p.confidenceLabel || null,
                 neutralRestatement:    p.neutralRestatement || "",
+                moralLayer:            p.moralLayer || null,
                 manipulationTechniques:Array.isArray(p.manipulationTechniques) ? p.manipulationTechniques : [],
                 fallacies:             Array.isArray(p.fallacies) ? p.fallacies : [],
                 manipulationScore:     this._clamp(p.manipulationScore),
                 plainSummary:          p.plainSummary || "",
                 reasoning:             p.reasoning || "",
                 civicDataUsed:         !!p.civicDataUsed,
-                sourceQuality:         this._clamp(p.sourceQuality),
-                corroboration:         this._clamp(p.corroboration),
-                contextIntegrity:      this._clamp(p.contextIntegrity),
-                logicalSoundness:      this._clamp(p.logicalSoundness),
-                falsifiability:        this._clamp(p.falsifiability),
-                transparency:          this._clamp(p.transparency),
+                dimensions: {
+                    sourceQuality:    this._clamp(p.dimensions?.sourceQuality    ?? p.sourceQuality),
+                    corroboration:    this._clamp(p.dimensions?.corroboration    ?? p.corroboration),
+                    contextIntegrity: this._clamp(p.dimensions?.contextIntegrity ?? p.contextIntegrity),
+                    logicalSoundness: this._clamp(p.dimensions?.logicalSoundness ?? p.logicalSoundness),
+                    falsifiability:   this._clamp(p.dimensions?.falsifiability   ?? p.falsifiability),
+                    transparency:     this._clamp(p.dimensions?.transparency     ?? p.transparency),
+                },
+                credibilityScore:      this._clamp(p.credibilityScore),
                 framingFlags:          Array.isArray(p.framingFlags) ? p.framingFlags : [],
                 educatedInference:     p.educatedInference || null,
                 pathForward:           p.pathForward || null,
+                incentiveBias:         p.incentiveBias || null,
                 claimDNA:              p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
                 provider, method: "llm",
             };
-        } catch { return null; }
+        } catch(e) {
+            console.warn("[Honest Abe] Parse failed:", e.message);
+            return null;
+        }
     }
 
     _clamp(v) { const n = parseFloat(v); return isNaN(n) ? 0.5 : Math.min(1, Math.max(0, n)); }
