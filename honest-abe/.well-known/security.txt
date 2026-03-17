@@ -1,0 +1,15 @@
+# Honest Abe — Security Notes
+# https://honest-abe.pages.dev/.well-known/security.txt
+
+Contact: https://github.com/voterhelptool/Honest-Abe/issues
+Preferred-Languages: en
+
+# Known architectural constraints:
+# 1. unsafe-inline in CSP: required because this is a single-file app with all JS inline.
+#    Mitigation: all dynamic content rendered via textContent, not innerHTML.
+#    Future: extract JS to external files and use nonce-based CSP.
+# 2. Puter.js loaded without SRI: Puter's script is dynamically generated and not versioned.
+#    SRI would break on every Puter deployment. Mitigation: CSP connect-src scoped to
+#    *.puter.com only. Future: pin to a specific Puter version URL when available.
+# 3. X-Frame-Options and frame-ancestors set via meta tag on GitHub Pages.
+#    These are enforced as HTTP headers on Cloudflare Pages via _headers file.
