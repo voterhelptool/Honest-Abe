@@ -218,7 +218,7 @@ Respond ONLY with valid JSON — no text before or after, no markdown fences:
   "fallacies": ["max 2 items — use ONLY exact values from this list, no others: adhominem, ambiguity, anecdotal, appealtoauthority, appealtoemotion, appealtonature, bandwagon, beggingthequestion, blackorwhite, burdenofproof, compositiondivision, falsecause, genetic, loadedquestion, middleground, notruescotsman, personalincredulity, slipperyslope, specialpleading, strawman, thefallacyfallacy, thegamblersfallacy, thetexassharpshooter, tuquoque — or empty array if none apply"],
   "manipulationScore": 0.0-1.0,
   "plainSummary": "2-3 sentences. Be direct. If false, say false. If refused, say why briefly.",
-  "reasoning": "Why this verdict? What evidence exists or doesn't? For value judgments, what does the record actually show?",
+  "reasoning": "The evidence trail. What did you check? What did you find? Format: 'I checked [source/record] and found [specific finding]. This [supports/contradicts] the claim because [reason].' Be specific — name what exists or doesn't. For value judgments, cite the factual record that informed the assessment.",
   "civicDataUsed": true | false,
   "dimensions": {
     "sourceQuality": 0.0-1.0,
@@ -233,8 +233,8 @@ Respond ONLY with valid JSON — no text before or after, no markdown fences:
   "educatedInference": "If UNVERIFIABLE or LOW confidence: best probabilistic estimate clearly labeled as inference. Otherwise null.",
   "pathForward": "Specific things to verify. Where this analysis is weakest. Not a generic 'check sources' cop-out.",
   "claimDNA": {
-    "verifiablePieces": ["atomic assertions that can be checked"],
-    "unverifiablePieces": ["assertions that cannot be verified"]
+    "verifiablePieces": ["Each atomic assertion that CAN be checked — phrase as a checkable statement, e.g. 'The unemployment rate in March 2024 was X%'"],
+    "unverifiablePieces": ["Each assertion that CANNOT be verified and why — e.g. 'Future prediction: cannot be confirmed until event occurs'"]
   }
 }`;
 }
