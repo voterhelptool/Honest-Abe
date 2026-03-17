@@ -20,6 +20,7 @@ const PuterAdapter = {
     async query(prompt) {
         const response = await puter.ai.chat(prompt, {
             model: "claude-sonnet-4-6",
+            max_tokens: 1500,
         });
         if (typeof response === "string") return response;
         if (response?.message?.content?.[0]?.text) return response.message.content[0].text;
