@@ -1,265 +1,153 @@
-# Honest Abe
+# Honest Abe — Truth Checker
 
-> *A truth agent for everyone.*
+> *"Four score of lies won't add up to one truth. Let me help you sort them out."*
 
-**Free. Fair. Firm. Fun. True. Transparent. Accessible.**
+**[Try it → honest-abe.pages.dev](https://honest-abe.pages.dev)**
 
-Honest Abe is a free, open source truth and ethics agent that runs in your browser — as an extension or a web app — with no account, no server, no cost, and no data leaving your device unless you choose.
+Paste any claim, headline, quote, or statement. Honest Abe tells you if it's **TRUE, FALSE, MISLEADING, SUBJECTIVE, OPINION**, or **UNVERIFIABLE** — with plain-English reasoning, manipulation detection, and civic action prompts.
 
-It evaluates claims against four pillars of truth, detects manipulative framing, surfaces incentive bias, and flags its own uncertainty rather than guessing.
-
----
-
-## Try It
-
-**Web app (works in any browser including DuckDuckGo and mobile):**
-→ [voterhelptool.github.io/Honest-Abe](https://voterhelptool.github.io/Honest-Abe)
-
-**Browser extension (Chrome, Firefox, Safari):**
-→ See [Installing the Extension](#installing-the-extension) below
+Free. No account required. No tracking. No ads. Ever.
 
 ---
 
-## What It Does
+## What Abe Does
 
-Paste or select any claim — a headline, a social media post, a political statement, an advertisement — and Honest Abe evaluates it across four dimensions:
+Abe runs every claim through a 6-step pipeline:
 
-| Pillar | What it asks |
+1. **Decompose** — breaks the claim into atomic, checkable assertions
+2. **Search** — compares each assertion against the factual record
+3. **Neutralize** — strips emotional framing, restates the underlying facts plainly
+4. **Manipulate** — identifies rhetorical techniques used (cherry-picking, false equivalence, emotional loading, etc.)
+5. **Verdict** — evidence-based conclusion with confidence level and reasoning
+6. **Guide** — tells you where this analysis is weakest and what to verify yourself
+
+Abe also detects logical fallacies, flags incentive bias, and — for civic claims — prompts you to take action with links to primary sources.
+
+---
+
+## Verdicts
+
+| Verdict | Meaning |
 |---|---|
-| **Verifiable** | Can this be traced to a primary source? |
-| **Reproducible** | Do independent sources reach the same conclusion? |
-| **Contextually Honest** | Is it framed to imply something false, even if technically true? |
-| **Falsifiable** | Could evidence disprove this claim? |
-
-It also detects:
-- **Manipulative framing** — absolute generalizations, tribal language, conspiracy framing, suppression claims, false consensus
-- **Incentive bias** — who benefits if this claim is believed?
-- **Internal inconsistency** — if the reasoning contradicts itself, the result is killed before it reaches you
-
----
-
-## What It Does Not Do
-
-Honest Abe does not declare contested value judgments true or false.
-
-Whether a policy is good. Whether a leader is moral. Whether a historical decision was just. These are not factual questions with falsifiable answers. Honest Abe surfaces the disagreement. It does not resolve it.
-
-A truth agent that decides which values are correct stops being a truth agent.
+| `TRUE` / `MOSTLY TRUE` | Supported by the factual record |
+| `MISLEADING` | Technically accurate but framed to deceive |
+| `MOSTLY FALSE` / `FALSE` | Contradicted by the factual record |
+| `FACTUALLY TRUE / MORALLY DISPUTED` | The facts check out, but the ethics don't |
+| `OPINION` | Value judgment — Abe gives the factual record, then an informed assessment |
+| `SUBJECTIVE` | Personal preference or sensory claim — not analyzable as fact |
+| `UNVERIFIABLE` | Insufficient evidence to reach a verdict |
+| `REFUSED` | Not a claim — nonsense, joke, or meaningless statement |
 
 ---
 
-## The 7 F's
+## Abe's Constitution
 
-These are not marketing. They are hard constraints baked into the code.
+Seven principles that govern every output:
 
-- **Free** — No cost, no gate, no owner. Truth belongs to everyone.
-- **Fair** — No ideology, party, or interest gets preferential weighting.
-- **Firm** — Evidence is held without wavering. Social pressure is not evidence.
-- **Fun** — Accessible and human. Not a lecture. Not a punishment.
-- **True** — Correspondence with verifiable, reproducible, falsifiable reality.
-- **Transparent** — Every score, source, and decision is fully auditable.
-- **Accessible** — Plain language. Works for everyone, everywhere, on any device.
+- **FREE** — always zero cost, zero barriers
+- **FAIR** — same standard applied to every politician, party, and ideology
+- **FIRM** — never hedges under social pressure, only under evidence
+- **FUN** — plain language, never preachy, never punishing
+- **TRUE** — every claim evaluated against all four pillars
+- **TRANSPARENT** — audit trail on every result
+- **ACCESSIBLE** — no jargon without explanation
+
+Four pillars every truth claim must satisfy:
+
+- **Verifiable** — traceable to a primary source
+- **Reproducible** — independent sources reach the same conclusion
+- **Contextually Honest** — not selectively framed to imply something false
+- **Falsifiable** — evidence exists that could disprove the claim
 
 ---
 
 ## How It Works
 
-### Provider-Agnostic NLP
+### AI Provider Chain
+Abe uses a cascading provider chain:
 
-Honest Abe doesn't depend on any single AI provider. It tries providers in order, and if any response fails internal consistency checks, it kills that result and tries the next.
+```
+Puter.js (Claude Sonnet) → Pattern Analysis (offline fallback)
+```
 
-| Provider | Requires | Notes |
-|---|---|---|
-| Puter.js | Nothing | No account, no key, 500+ models |
-| mlvoca | Nothing | No key, Ollama-compatible endpoint |
-| HuggingFace | Free account token | Optional, set in extension settings |
-| Mistral | Free tier key | Optional, European, privacy-focused |
-| WebLLM | WebGPU device | Fully local, no internet after first load |
-| Pattern matching | Nothing | **Always works. Always last. Never removed.** |
+**Puter.js** is a free AI platform — sign in once with a free account and Abe uses Claude Sonnet for full analysis. No API key required, no credit card, no cost to you.
 
-The pattern matching adapter is the bedrock. It requires no internet, no AI, no account. It guarantees Honest Abe works on any device in any condition, regardless of what any provider decides.
+**Pattern Analysis** runs entirely in your browser when Puter is unavailable. It detects manipulation language, framing patterns, and claim structure offline — no data ever leaves your device.
 
-### Hallucination Guard
+> ⚠️ Complex or political claims may take up to 60 seconds and use Puter AI credits from your free account.
 
-Every provider response passes five self-interrogation tests before reaching you:
+### Privacy
+- Honest Abe **never stores any data** — no claims, no results, no user information
+- When using Puter, your claim is sent to Puter's AI infrastructure subject to [Puter's privacy policy](https://puter.com/privacy)
+- Pattern analysis mode sends **nothing** — all processing happens locally in your browser
 
-1. **Pillar spread** — scores can't wildly contradict each other
-2. **Confidence delta** — can't be highly confident with weak pillar scores
-3. **Directional agreement** — pillars must mostly point the same way
-4. **Summary drift** — plain language must match the scores
-5. **Framing contradiction** — can't flag manipulation but score context as clean
+---
 
-If any test fails — the result is killed. Not degraded. Not guessed at. Killed. The next provider is tried. If all providers fail, Abe returns `INCONCLUSIVE` and tells you to verify manually.
+## Hosting
 
-*"I don't know" is an honest answer. A hallucinated verdict on a false claim is not.*
+Honest Abe is hosted on **Cloudflare Pages** with full HTTP security headers via `_headers`:
 
-### Human Reinforcement
+- `Content-Security-Policy` — restricts script and connection sources
+- `X-Frame-Options: DENY` — prevents clickjacking
+- `X-Content-Type-Options: nosniff`
+- `Strict-Transport-Security` — enforces HTTPS
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy` — disables camera, microphone, geolocation
 
-Humans improve the model. The model never overrides humans.
+---
 
-- Flag bad outputs
-- Vote on truth scores
-- Submit new detection patterns
-- Review and approve agent-proposed changes
+## Security
 
-Every proposed change requires community quorum to apply. One veto blocks everything. Every approval is logged and auditable forever.
+- All AI/user content rendered via `textContent` — no `innerHTML` with dynamic data
+- `?rep=` URL parameter whitelisted and length-capped before use
+- Prompt injection patterns stripped before reaching the AI
+- Puter session validated by AI ping, not just auth check — catches ghost/OAuth sessions
 
 ---
 
 ## File Structure
 
 ```
-honest-abe/
-├── manifest.json           Chrome + Firefox extension (Manifest V3)
-├── background.js           Service worker, context menu
-├── content.js              Inline badges on any page
-├── popup.html              Extension popup UI
-├── popup.js                Extension popup logic
-├── index.html              PWA — works in any browser
-├── pwa-manifest.json       PWA installability
-├── sw.js                   Offline service worker
-├── ethics.js               Hard ethical gate (immutable)
-├── truth-model.js          4 pillars + 7 F's as structural code
-├── hallucination-guard.js  Self-interrogation loop
-├── nlp.js                  Provider-agnostic adapter layer
-├── agent.js                Agentic loop + human reinforcement
-├── PHILOSOPHY.md           Why the code is the way it is
-└── adapters/
-    ├── puter.js             No key, 500+ models
-    ├── mlvoca.js            No key, Ollama-compatible
-    ├── huggingface.js       Free account
-    ├── mistral.js           Free tier, European
-    ├── webllm.js            Fully local, WebGPU
-    └── pattern.js           Bedrock — always works
-```
-
-### Load Order
-
-```
-ethics.js
-truth-model.js
-hallucination-guard.js
-nlp.js + adapters/
-agent.js
+/
+├── index.html                  # Main app (single file)
+├── _headers                    # Cloudflare Pages HTTP security headers
+├── honest-abe/
+│   ├── nlp.js                  # 6-step analysis pipeline + provider chain
+│   ├── truth-model.js          # Constitutional integrity framework
+│   ├── ethics.js               # Ethics gate
+│   ├── hallucination-guard.js  # Output validation
+│   ├── fallacy-lookup.js       # Logical fallacy card renderer
+│   ├── agent.js                # Orchestration layer
+│   ├── adapters/
+│   │   ├── puter.js            # Puter.js AI adapter (primary)
+│   │   └── pattern.js          # Offline pattern fallback
+│   ├── icons/                  # PWA icons
+│   ├── pwa-manifest.json       # PWA manifest
+│   └── sw.js                   # Service worker (offline support)
 ```
 
 ---
 
-## Installing the Extension
+## Running Locally
 
-### Chrome / Brave / Edge
-1. Download and unzip this repo
-2. Go to `chrome://extensions`
-3. Enable **Developer mode** (top right)
-4. Click **Load unpacked** → select the `honest-abe` folder
-5. Pin Honest Abe to your toolbar
+No build step. No dependencies. Open `index.html` in a browser.
 
-### Firefox
-1. Download and unzip this repo
-2. Go to `about:debugging#/runtime/this-firefox`
-3. Click **Load Temporary Add-on** → select `manifest.json`
-
-### Safari (macOS / iOS)
-1. Clone this repo
-2. Run `xcrun safari-web-extension-converter honest-abe/`
-3. Open the generated Xcode project and build to your device
-
-### Firefox for Android
-Same as Firefox desktop — extensions are supported.
-
----
-
-## Adding a New Provider
-
-Drop a file in `/adapters/` that implements three things:
-
-```javascript
-const MyAdapter = {
-    name: "MyProvider",
-
-    async available() {
-        // return true if this provider can be reached right now
-    },
-
-    async query(prompt) {
-        // send prompt, return response text
-    }
-};
-
-if (typeof module !== "undefined") module.exports = MyAdapter;
-else window._HonestAbeAdapter_My = MyAdapter;
-```
-
-Then add it to the `PROVIDERS` array in `nlp.js`. Submit a PR. The community reviews it before it ships.
+For Puter AI to work locally, serve over HTTPS or use a local dev server — Puter's auth popup requires a secure context.
 
 ---
 
 ## Contributing
 
-Read `PHILOSOPHY.md` before opening a pull request.
+This is an independent civic technology project. Anonymous authorship by design — no personal attribution anywhere in the codebase.
 
-Before writing any code, ask:
-- Does this serve the 7 F's?
-- Does it strengthen or weaken any of the 4 pillars?
-- Does it make the system more or less auditable?
-- Does it make it more or less accessible to the person with the least?
-
-If the answer is unclear — open a discussion first.
-
-### What we welcome
-- New provider adapters
-- Improved framing detection patterns
-- Translations and accessibility improvements
-- Test suites with known true/false/manipulative claims
-- Documentation and plain language improvements
-
-### What we don't accept
-- Changes that introduce any cost to the end user
-- Changes that route data to a server without explicit user consent
-- Changes that reduce auditability
-- Changes applied without community review
-
----
-
-## Governance
-
-See `GOVERNANCE.md` for the full decision-making process.
-
-All proposed changes to core logic (`ethics.js`, `truth-model.js`, `hallucination-guard.js`) require:
-- Community discussion
-- Minimum 2 approvals
-- Zero vetoes
-- Full audit log entry
-
----
-
-## Privacy
-
-Honest Abe collects nothing.
-
-- No user accounts
-- No analytics
-- No telemetry
-- No data sent to any server unless you opt into a cloud provider in settings
-- All analysis happens on your device by default
+Issues and pull requests welcome at [github.com/voterhelptool/Honest-Abe](https://github.com/voterhelptool/Honest-Abe).
 
 ---
 
 ## License
 
-MIT. Free forever. Fork it, build on it, improve it.
-
-If you build something with it — tell us. We'd love to know.
+See [LICENSE](LICENSE).
 
 ---
 
-## Why "Honest Abe"?
-
-Because Abraham Lincoln's reputation for honesty was earned, not claimed. He said uncomfortable things when it would have been easier to stay quiet. He held positions under pressure when reversing them would have been more convenient.
-
-That's the standard. Not perfect. Not infallible. Honest.
-
----
-
-*Free. Fair. Firm. Fun. True. Transparent. Accessible.*
-*Always verify with primary sources.*
+*Not affiliated with any election audit tool, political party, or commercial entity.*
