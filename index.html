@@ -822,7 +822,7 @@
       <button class="abe-civic-clear" onclick="clearCivicContext()">✕ Clear</button>
     </div>
     <textarea id="claimInput" placeholder="Paste or type any claim, headline, or statement you'd like Honest Abe to evaluate…" aria-describedby="claimHint" rows="4"></textarea>
-    <div id="claimHint" style="font-size:13px;color:var(--muted);margin-top:6px;">Press Ctrl+Enter to analyze.</div>
+    <div id="claimHint" style="font-size:13px;color:var(--muted);margin-top:6px;">Press Ctrl+Enter to analyze. &nbsp;·&nbsp; <span style="color:var(--muted);">Complex or political claims may take up to 60 seconds and use more of your Puter AI credits.</span></div>
     <div class="btn-row">
       <button class="analyze-btn" id="analyzeBtn" aria-live="polite">Analyze</button>
       <span class="provider-status" id="providerStatus" aria-live="polite" aria-atomic="true"></span>
@@ -1412,12 +1412,18 @@ $("analyzeBtn").addEventListener("click", async () => {
     resetCredibilityIndex();
 
     // Gate already validated Puter session — no need to re-check here
-    const msgs = ["Abe is thinking…", "Checking sources…", "Almost there…"];
+    const msgs = [
+        "Abe is thinking…",
+        "Checking the record…",
+        "Complex claims take longer — Abe is being thorough…",
+        "Still working — this one has layers…",
+        "Almost there…"
+    ];
     let mi = 0;
     const ticker = setInterval(() => {
         mi = Math.min(mi + 1, msgs.length - 1);
         $("providerStatus").textContent = msgs[mi];
-    }, 5000);
+    }, 12000);
 
     try {
         const result = await nlp.analyze(claim, {
