@@ -406,8 +406,43 @@
     margin-bottom: 6px;
   }
 
-  /* ── SOURCES ── */
-  .sources-block { margin: 16px 0 0 0; }
+  /* ── Reasoning Block ── */
+  .reasoning-block {
+    margin: 0 0 16px 0;
+    padding: 12px 16px;
+    background: rgba(255,255,255,.03);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+  }
+  .reasoning-label {
+    font-size: 10px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 6px;
+  }
+  .reasoning-text { font-size: 13px; line-height: 1.7; color: var(--parchment); }
+
+  /* ── Evidence Trail ── */
+  .evidence-block {
+    margin: 0 0 16px 0;
+    padding: 12px 16px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 6px;
+  }
+  .evidence-label {
+    font-size: 10px; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .evidence-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12px; color: var(--parchment); line-height: 1.6;
+    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .evidence-item:last-child { border-bottom: none; }
+  .evidence-icon { flex-shrink: 0; font-size: 11px; margin-top: 2px; color: var(--gold); }
+  .evidence-unverifiable { color: var(--muted); font-style: italic; }
+
+  /* ── Sources (elevated to evidence) ── */
+  .sources-block { margin: 0 0 16px 0; }
   .sources-label {
     font-size: 10px;
     font-weight: 700;
@@ -906,15 +941,26 @@
       <span id="gapText"></span>
     </div>
 
-    <!-- Path Forward -->
-    <div id="pathBlock" class="path-block" style="display:none">
+    <!-- Reasoning — WHY Abe reached this verdict -->
+    <div id="reasoningBlock" class="reasoning-block" style="display:none">
+      <div class="reasoning-label">Why Abe reached this verdict</div>
+      <div class="reasoning-text" id="reasoningText"></div>
+    </div>
+
+    <!-- Evidence Trail — WHAT was checked -->
+    <div id="evidenceBlock" class="evidence-block" style="display:none">
+      <div class="evidence-label">What was checked</div>
+      <div id="evidenceItems"></div>
+    </div>
+
+    <!-- Path Forward -->\n    <div id="pathBlock" class="path-block" style="display:none">
       <div class="path-label">How to verify this</div>
       <div id="pathText"></div>
     </div>
 
     <!-- Sources -->
     <div id="sourcesBlock" class="sources-block" style="display:none">
-      <div class="sources-label">Check these sources</div>
+      <div class="sources-label">Where to check — sources by political lean</div>
       <div class="source-chips" id="sourceChips"></div>
     </div>
 
@@ -1114,6 +1160,54 @@ function renderResult(result) {
 
     // ── CREDIBILITY INDEX ──
     renderCredibilityIndex(result);
+
+    // ── REASONING — why Abe reached this verdict ──
+    const reasoning = result.reasoning;
+    const reasoningEl = $("reasoningBlock");
+    if (reasoning && !hideExtras) {
+        $("reasoningText").textContent = reasoning;
+        reasoningEl.style.display = "block";
+    } else {
+        reasoningEl.style.display = "none";
+    }
+
+    // ── EVIDENCE TRAIL — what was actually checked ──
+    const dna = result.claimDNA || {};
+    const verifiable   = Array.isArray(dna.verifiablePieces)   ? dna.verifiablePieces   : [];
+    const unverifiable = Array.isArray(dna.unverifiablePieces) ? dna.unverifiablePieces : [];
+    const evidenceEl   = $("evidenceBlock");
+    const evidenceItems = $("evidenceItems");
+    if ((verifiable.length || unverifiable.length) && !hideExtras) {
+        evidenceItems.innerHTML = "";
+        verifiable.forEach(piece => {
+            const d = document.createElement("div");
+            d.className = "evidence-item";
+            const icon = document.createElement("span");
+            icon.className = "evidence-icon";
+            icon.textContent = "✓";
+            const txt = document.createElement("span");
+            txt.textContent = String(piece).slice(0, 300);
+            d.appendChild(icon);
+            d.appendChild(txt);
+            evidenceItems.appendChild(d);
+        });
+        unverifiable.forEach(piece => {
+            const d = document.createElement("div");
+            d.className = "evidence-item";
+            const icon = document.createElement("span");
+            icon.className = "evidence-icon";
+            icon.textContent = "?";
+            const txt = document.createElement("span");
+            txt.className = "evidence-unverifiable";
+            txt.textContent = String(piece).slice(0, 300);
+            d.appendChild(icon);
+            d.appendChild(txt);
+            evidenceItems.appendChild(d);
+        });
+        evidenceEl.style.display = "block";
+    } else {
+        evidenceEl.style.display = "none";
+    }
 
     // ── NEUTRAL RESTATEMENT ──
     const neutral = result.neutralRestatement;
@@ -1335,6 +1429,8 @@ function resetCredibilityIndex() {
     $("credibility-index").style.display = "block";
     $("neutralBlock").style.display = "none";
     $("manipBlock").style.display = "none";
+    if ($("reasoningBlock")) $("reasoningBlock").style.display = "none";
+    if ($("evidenceBlock"))  $("evidenceBlock").style.display  = "none";
     if ($("moralBlock")) $("moralBlock").style.display = "none";
     if ($("actionBlock")) $("actionBlock").style.display = "none";
     if ($("fallacyCards")) $("fallacyCards").style.display = "none";
