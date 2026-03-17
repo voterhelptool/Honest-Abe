@@ -562,6 +562,7 @@ class NLPEngine {
                 this._log(adapter.name, "ATTEMPTING", claim.slice(0, 60));
                 const timeout = adapter.name === "Puter.js" ? 30000 : 15000;
                 const raw     = await this._timeout(adapter.query(prompt), timeout);
+                this._log(adapter.name, "RAW_RESPONSE", typeof raw === "string" ? raw.slice(0, 300) : JSON.stringify(raw).slice(0, 300));
                 const parsed  = this._parse(raw, adapter.name);
 
                 if (!parsed?.verdict && !parsed?.verdictLabel) { this._log(adapter.name, "BAD_RESPONSE"); continue; }
