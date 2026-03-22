@@ -71,10 +71,8 @@ const SOURCES = {
 };
 
 // Detect if a claim is personal/subjective/unverifiable by nature
-// These have no business being routed to PolitiFact or FactCheck
 function isUnverifiableClaim(claim, claimType) {
     const c = claim.toLowerCase();
-    // Subjective taste, feeling, preference, hypothetical, nonsense
     if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim)) return true;
     if (/\b(best|worst|favorite|ugliest|prettiest|most beautiful|funniest)\b/.test(c) && !/\b(president|senator|congress|policy|law|economy)\b/.test(c)) return true;
     if (/\b(god|heaven|hell|soul|afterlife|angels|demons|supernatural|spiritual|divine)\b/.test(c)) return true;
@@ -84,7 +82,6 @@ function isUnverifiableClaim(claim, claimType) {
 }
 
 function getSourcesForClaim(claimType, keywords = [], claim = "") {
-    // Personal/subjective/nonsense claims get no sources
     if (claimType === "subjective" || isUnverifiableClaim(claim, claimType)) return [];
 
     const kw = keywords.join(" ").toLowerCase();
@@ -115,11 +112,9 @@ function getSourcesForClaim(claimType, keywords = [], claim = "") {
 // ── CLAIM TRIAGE ─────────────────────────────────────────────────────────
 function triageClaim(claim) {
     const c = claim.toLowerCase().trim();
-    // Questions first
     if (/^(who|what|when|where|why|how|is|are|was|were|did|does|do|can|could|should|would|will)\b/.test(c)) return "question";
     if (/\?$/.test(c.trim())) return "question";
     if (/^(tell me|explain|describe|give me|show me)\b/.test(c)) return "question";
-    // Subjective/personal — catch before any civic/factual routing
     if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim)) return "subjective";
     if (/\b(my favorite|i prefer|i like|i love|i hate|i enjoy)\b/i.test(c) && !/\b(president|senator|policy|law|vote|congress)\b/i.test(c)) return "subjective";
     if (/\b(\d+%|\d+ percent|statistics|data shows|studies|research shows|according to)\b/.test(c)) return "statistical";
@@ -301,19 +296,17 @@ const MANIPULATION_PATTERNS = [
     { re: /!{2,}|[A-Z]{4,}/,                                                        flag: "Typographic amplification — all-caps or excess punctuation", weight: 0.12 },
 ];
 
-// Score claim specificity — more specific = more verifiable
 function _claimSpecificity(claim, dna) {
-    let score = 0.4; // baseline
+    let score = 0.4;
     if (dna.entities && dna.entities.length > 0) score += 0.15;
-    if (/\b(\d{4})\b/.test(claim)) score += 0.10;          // has a year
+    if (/\b(\d{4})\b/.test(claim)) score += 0.10;
     if (/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(claim)) score += 0.08;
     if (/\b(bill|law|act|vote|election|study|report|data)\b/i.test(claim)) score += 0.10;
-    if (claim.split(' ').length > 12) score += 0.05;         // longer = more specific
-    if (/\b(according to|per|reported by|published in)\b/i.test(claim)) score += 0.08; // has attribution
+    if (claim.split(' ').length > 12) score += 0.05;
+    if (/\b(according to|per|reported by|published in)\b/i.test(claim)) score += 0.08;
     return Math.min(0.92, score);
 }
 
-// Score logical structure
 function _logicalScore(claim, flags) {
     let score = 0.65;
     if (flags.some(f => f.includes('Absolute')))    score -= 0.20;
@@ -324,9 +317,6 @@ function _logicalScore(claim, flags) {
     return Math.max(0.10, Math.min(0.90, score));
 }
 
-// ── SMART PATTERN ANALYSIS HELPERS ───────────────────────────────────────
-
-// Extract numbers, percentages, dates, named entities from claim
 function _extractFacts(claim) {
     const numbers     = claim.match(/\b\d[\d,]*\.?\d*\s*(%|percent|million|billion|trillion|thousand)?\b/gi) || [];
     const dates       = claim.match(/\b(19|20)\d{2}\b|\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(,?\s*\d{4})?\b/gi) || [];
@@ -335,7 +325,6 @@ function _extractFacts(claim) {
     return { numbers, dates, quotedText, namedThings };
 }
 
-// Detect claim type from language patterns
 function _detectClaimType(claim) {
     const lower = claim.toLowerCase();
     if (/\b(always|never|all|every|no one|nobody|everyone|entirely|completely|100%|zero)\b/.test(lower)) return "absolute";
@@ -348,7 +337,6 @@ function _detectClaimType(claim) {
     return "general";
 }
 
-// Generate specific search suggestions based on claim content
 function _buildSearchSuggestions(claim, dna, facts) {
     const suggestions = [];
     const entities = dna?.entities || facts.namedThings.slice(0, 3);
@@ -367,7 +355,6 @@ function _buildSearchSuggestions(claim, dna, facts) {
     return suggestions.slice(0, 3);
 }
 
-// Build a real neutral restatement
 function _neutralize(claim) {
     const chargedPositive = /\b(amazing|incredible|brilliant|heroic|patriot|freedom fighter|visionary|revolutionary)\b/gi;
     const chargedNegative = /\b(radical|extreme|dangerous|destroy|invasion|criminal|catastrophe|disaster|elites|globalists|regime|tyrant|corrupt|evil|woke|fascist)\b/gi;
@@ -388,55 +375,42 @@ function _neutralize(claim) {
         : `Stripped of framing: "${neutral}" — the core assertion can now be evaluated on its factual merits.`;
 }
 
-// Derive an aggressive verdict from pattern evidence
 function _deriveVerdict(claim, flags, manip, claimType, facts, specificity) {
     const lower = claim.toLowerCase();
 
-    // Subjective taste/preference/feeling — not a factual claim, can't be analyzed
     if (/(tastes?|smells?|feels?|looks?|sounds?)(\s+\w+)?\s+(good|bad|great|awful|nice|terrible|weird|gross|disgusting|amazing|delicious)/i.test(claim))
         return { verdict: "SUBJECTIVE", confidence: 0.99, reason: "This is a subjective sensory preference — not a factual claim. Abe analyzes evidence, not taste buds. There's nothing to fact-check here." };
 
-    // Pure nonsense / unfalsifiable personal opinion with no civic dimension
     if (/\b(my favorite|i prefer|i like|i love|i hate|i enjoy)\b/i.test(claim) && !/\b(president|senator|policy|law|vote|congress)\b/i.test(claim))
         return { verdict: "SUBJECTIVE", confidence: 0.99, reason: "Personal preference — not a factual claim. Abe can't verify what you enjoy. That's between you and your choices." };
 
-    // Nonsense / unfalsifiable
     if (/\b(bigfoot|flat earth|chemtrail|lizard people|microchip|5g causes|illuminati|deep state controls everything)\b/i.test(claim))
         return { verdict: "FALSE", confidence: 0.88, reason: "Claim matches well-documented conspiracy theory with no credible evidentiary basis." };
 
-    // Absolute claims with no source are almost always misleading
     if (claimType === "absolute" && !(/according to|published|source|study|data/i.test(claim)))
         return { verdict: "MISLEADING", confidence: 0.65, reason: "Absolute language (always/never/all/everyone) applied to a complex topic without citation is a strong indicator of oversimplification." };
 
-    // High manipulation score = misleading framing at minimum
     if (manip >= 0.6)
         return { verdict: "MISLEADING", confidence: 0.70, reason: `${flags.length} manipulation technique(s) detected including: ${flags.slice(0,2).map(f=>f.split('—')[0].trim()).join(', ')}. Heavy rhetorical loading suggests the framing is designed to provoke rather than inform.` };
 
-    // Quoted claims without verifiable attribution
     if (claimType === "quote" && facts.quotedText.length > 0 && !/\b(according to|published|reported|source)\b/i.test(claim))
         return { verdict: "UNVERIFIABLE", confidence: 0.60, reason: "Attributed quote with no verifiable source. Quotes are frequently fabricated, taken out of context, or misattributed online." };
 
-    // Statistical claims without a source
     if (claimType === "statistical" && facts.numbers.length > 0 && !/according to|published|source|study|data|survey/i.test(claim))
         return { verdict: "UNVERIFIABLE", confidence: 0.55, reason: `Specific figure (${facts.numbers[0]}) cited with no sourcing. Statistics without attribution cannot be verified and are frequently invented or misrepresented.` };
 
-    // Causal claims are almost always oversimplified
     if (claimType === "causal" && manip > 0.2)
         return { verdict: "MISLEADING", confidence: 0.58, reason: "Causal framing combined with rhetorical loading. Single-cause explanations for complex phenomena are typically oversimplifications." };
 
-    // Predictive claims are unverifiable by definition
     if (claimType === "predictive")
         return { verdict: "UNVERIFIABLE", confidence: 0.50, reason: "Predictive claim — cannot be verified against current facts. Track record of the source matters." };
 
-    // Moderate flags = probably misleading
     if (flags.length >= 2)
         return { verdict: "MISLEADING", confidence: 0.52, reason: `${flags.length} rhetorical patterns detected. Not necessarily false, but framed in a way that warrants scrutiny.` };
 
-    // Low specificity = can't evaluate
     if (specificity < 0.3)
         return { verdict: "UNVERIFIABLE", confidence: 0.40, reason: "Claim is too vague to evaluate — no specific names, dates, numbers, or falsifiable assertions." };
 
-    // Default: unverifiable but not alarming
     return { verdict: "UNVERIFIABLE", confidence: 0.35, reason: "No strong manipulation signals detected, but pattern analysis cannot verify factual accuracy without a knowledge base." };
 }
 
@@ -457,8 +431,6 @@ function patternAnalysis(claim, claimType, dna) {
 
     const { verdict, confidence, reason } = _deriveVerdict(claim, flags, manip, detectedType, facts, specificity);
     const searches = _buildSearchSuggestions(claim, dna, facts);
-
-    const allEntities = [...(dna?.entities || []), ...facts.namedThings.slice(0,3)].filter((v,i,a)=>a.indexOf(v)===i);
 
     const manipSummary = flags.length > 0
         ? `${flags.length} rhetorical pattern(s) detected: ${flags.map(f=>f.split('—')[0].trim()).join('; ')}.`
@@ -500,7 +472,9 @@ function patternAnalysis(claim, claimType, dna) {
             ? `Suggested searches: ${searches.map(s=>`"${s}"`).join(' | ')}`
             : "Search primary sources: government records, peer-reviewed studies, or official statements.",
         claimDNA: {
-            verifiablePieces: allEntities.length > 0 ? allEntities : facts.numbers.length > 0 ? facts.numbers : ["No specific verifiable claims found"],
+            // Pattern matching cannot verify claims — never populate verifiablePieces with
+            // raw tokens, entities, or numbers. Those are scoring inputs, not checked facts.
+            verifiablePieces: [],
             unverifiablePieces: detectedType === "predictive" ? ["Future prediction — inherently unverifiable"] : specificity < 0.3 ? ["Claim too vague to check specifically"] : [],
         },
         provider: "pattern", method: "pattern",
@@ -515,22 +489,16 @@ class NLPEngine {
         this._active = null;
     }
 
-    /**
-     * @param {string} claim
-     * @param {object} [context]
-     * @param {object} [context.civic] — rep data injected from civic profile URL params
-     */
     _sanitizeClaim(raw) {
-        // Strip prompt injection attempts — these are not claims, they are attacks
         const injectionPatterns = [
             /ignore (all |previous |above |prior )?instructions?/gi,
             /forget (everything|your instructions|what i said)/gi,
             /you are now|pretend (to be|you are)|act as if/gi,
             /jailbreak|dan mode|developer mode|god mode/gi,
             /system prompt|disregard (your|all|previous)/gi,
-            /\[\[.*?\]\]|\{\{.*?\}\}/g,  // template injection
+            /\[\[.*?\]\]|\{\{.*?\}\}/g,
         ];
-        let clean = raw.slice(0, 2000); // hard length cap
+        let clean = raw.slice(0, 2000);
         for (const p of injectionPatterns) {
             clean = clean.replace(p, "[removed]");
         }
@@ -582,7 +550,6 @@ class NLPEngine {
         }
 
         const sources    = getSourcesForClaim(claimType, dna.keywords, claim);
-        // Support both nested dimensions object and flat fields (older AI responses)
         const d = result.dimensions || {};
         const dimensions = {
             sourceQuality:    d.sourceQuality    ?? result.sourceQuality    ?? 0.5,
@@ -594,7 +561,6 @@ class NLPEngine {
         };
         const rawScore = Object.values(dimensions).reduce((a, b) => a + b, 0) / 6;
         const credibilityScore = result.credibilityScore ?? (isNaN(rawScore) ? 0.5 : rawScore);
-        // Preserve verdict from AI/pattern — only fall back to scoring if nothing set
         const verdict = result.verdict === "REFUSED" ? "REFUSED"
             : claimType === "opinion" ? "OPINION"
             : (result.verdict || result.verdictLabel || this._scoreToVerdict(credibilityScore, result.confidence));
@@ -626,13 +592,12 @@ class NLPEngine {
         try {
             let clean = raw
                 .replace(/<think>[\s\S]*?<\/think>/gi, "")
-                .replace(/```json\s*/gi, "")   // strip ```json with any trailing whitespace/newline
-                .replace(/```\s*/g, "")         // strip closing ``` with any trailing whitespace
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
                 .trim();
             const match = clean.match(/\{[\s\S]*\}/);
             if (match) clean = match[0];
             const p = JSON.parse(clean);
-            // AI returns either "verdict" or "verdictLabel" — normalize both
             const verdict = p.verdict || p.verdictLabel || null;
             return {
                 verdict,
