@@ -562,6 +562,11 @@ class NLPEngine {
         if (!result) {
             this._log("pattern", "FALLBACK");
             result = patternAnalysis(claim, claimType, dna);
+            // If we have search results, surface them even in fallback
+            if (searchContext.successCount > 0) {
+                result.plainSummary = (result.plainSummary || "") +
+                    `\n\nNote: Web search was performed (${searchContext.summary}) but the AI analysis provider was unavailable. Results above are from pattern analysis only. Check sources directly for current information.`;
+            }
         }
 
         const sources    = getSourcesForClaim(claimType, dna.keywords, claim);
@@ -613,19 +618,21 @@ class NLPEngine {
             const match = clean.match(/\{[\s\S]*\}/);
             if (match) clean = match[0];
             const p = JSON.parse(clean);
+            // Sanitize: strip literal \n escape sequences from string fields
+            const cleanStr = s => typeof s === "string" ? s.replace(/\\n/g, " ").replace(/\n{3,}/g, "\n\n").trim() : s;
             const verdict = p.verdict || p.verdictLabel || null;
             return {
                 verdict,
                 verdictLabel:          verdict,
                 confidence:            this._clamp(p.confidence),
                 confidenceLabel:       p.confidenceLabel || null,
-                neutralRestatement:    p.neutralRestatement || "",
-                moralLayer:            p.moralLayer || null,
+                neutralRestatement:    cleanStr(p.neutralRestatement || ""),
+                moralLayer:            cleanStr(p.moralLayer || null),
                 manipulationTechniques:Array.isArray(p.manipulationTechniques) ? p.manipulationTechniques : [],
                 fallacies:             Array.isArray(p.fallacies) ? p.fallacies : [],
                 manipulationScore:     this._clamp(p.manipulationScore),
-                plainSummary:          p.plainSummary || "",
-                reasoning:             p.reasoning || "",
+                plainSummary:          cleanStr(p.plainSummary || ""),
+                reasoning:             cleanStr(p.reasoning || ""),
                 civicDataUsed:         !!p.civicDataUsed,
                 dimensions: {
                     sourceQuality:    this._clamp(p.dimensions?.sourceQuality    ?? p.sourceQuality),
@@ -636,10 +643,10 @@ class NLPEngine {
                     transparency:     this._clamp(p.dimensions?.transparency     ?? p.transparency),
                 },
                 credibilityScore:      this._clamp(p.credibilityScore),
-                framingFlags:          Array.isArray(p.framingFlags) ? p.framingFlags : [],
-                educatedInference:     p.educatedInference || null,
-                pathForward:           p.pathForward || null,
-                incentiveBias:         p.incentiveBias || null,
+                framingFlags:          Array.isArray(p.framingFlags) ? p.framingFlags.map(cleanStr) : [],
+                educatedInference:     cleanStr(p.educatedInference || null),
+                pathForward:           cleanStr(p.pathForward || null),
+                incentiveBias:         cleanStr(p.incentiveBias || null),
                 claimDNA:              p.claimDNA || { verifiablePieces: [], unverifiablePieces: [] },
                 provider, method: "llm",
             };
