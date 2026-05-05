@@ -138,7 +138,7 @@ function extractDNA(claim) {
 }
 
 // ── PROMPT BUILDER ────────────────────────────────────────────────────────
-function buildPrompt(claim, claimType, dna, civicContext) {
+function buildPrompt(claim, claimType, dna, civicContext, searchBlock) {
     const civicBlock = civicContext ? `
 CIVIC CONTEXT (verified data from official sources — use as primary factual baseline):
 - Representative: ${civicContext.name} (${civicContext.party || "?"})
@@ -152,7 +152,7 @@ CIVIC CONTEXT (verified data from official sources — use as primary factual ba
 ` : "";
 
     return `You are Honest Abe — a truth analysis engine named after Abraham Lincoln, who said what needed to be said even when it was unpopular.
-
+${searchBlock ? `\n${searchBlock}\n` : ""}
 YOUR CONSTITUTION — read this before analyzing anything:
 
 1. TRUTH IS NOT ALWAYS IN THE MIDDLE. Some claims are just false. Some actions are just wrong. When the evidence is clear, say so clearly. Manufactured neutrality in the face of clear evidence is its own form of dishonesty.
@@ -234,7 +234,7 @@ Respond ONLY with valid JSON — no text before or after, no markdown fences:
 }`;
 }
 
-function buildQuestionPrompt(question, civicContext) {
+function buildQuestionPrompt(question, civicContext, searchBlock) {
     const civicBlock = civicContext ? `
 CIVIC CONTEXT (verified data — use as primary factual baseline):
 - Representative: ${civicContext.name} (${civicContext.party || "?"})
@@ -247,7 +247,7 @@ CIVIC CONTEXT (verified data — use as primary factual baseline):
 ` : "";
 
     return `You are Honest Abe — a civic knowledge assistant named after Abraham Lincoln. You answer questions directly, honestly, and without spin. You are not a fact-checker right now — you are answering a question.
-
+${searchBlock ? `\n${searchBlock}\n` : ""}
 RULES:
 1. Answer the question directly and completely. Don't hedge unnecessarily.
 2. If the answer involves a public figure, give their background, role, and any notable facts.
@@ -513,9 +513,24 @@ class NLPEngine {
         const claimType = triageClaim(claim);
         const dna       = extractDNA(claim);
         const isQ       = claimType === "question";
+
+        // ── WEB SEARCH ENRICHMENT ─────────────────────────────────────────
+        // Fetch current web context before building the prompt.
+        // Minimum 3 searches, up to 5. Cycles DDG → Wikipedia → Brave.
+        // Skip for subjective claims — no factual basis to search.
+        let searchContext = { block: "", summary: "", successCount: 0 };
+        if (claimType !== "subjective" && typeof window !== "undefined" && window.SearchEnricher) {
+            try {
+                searchContext = await window.SearchEnricher.enrichWithSearch(claim, claimType, dna);
+                this._log("search", "ENRICHED", searchContext.summary);
+            } catch (e) {
+                this._log("search", "FAILED", e.message);
+            }
+        }
+
         const prompt    = isQ
-            ? buildQuestionPrompt(claim, context.civic || null)
-            : buildPrompt(claim, claimType, dna, context.civic || null);
+            ? buildQuestionPrompt(claim, context.civic || null, searchContext.block)
+            : buildPrompt(claim, claimType, dna, context.civic || null, searchContext.block);
 
         this._log("triage", "CLASSIFIED", claimType);
         if (context.civic) this._log("civic", "CONTEXT_LOADED", context.civic.name);
