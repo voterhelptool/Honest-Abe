@@ -191,10 +191,36 @@ function fetchWithTimeout(url, ms, headers = {}) {
 // Cycles DDG → Wikipedia → Brave per query.
 // If one fails, next provider tries the same query.
 
+// Provider 4: Wikipedia Page Extract
+// Gets the actual intro paragraph of the most relevant article - much richer than search snippets
+async function searchWikipediaExtract(query) {
+    // First find the best matching title
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*&srlimit=1`;
+    const sr = await fetchWithTimeout(searchUrl, SEARCH_CONFIG.timeoutMs);
+    const sd = await sr.json();
+    const topResult = sd?.query?.search?.[0];
+    if (!topResult) return [];
+
+    // Then get the full extract of that article
+    const extractUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(topResult.title)}&format=json&origin=*`;
+    const er = await fetchWithTimeout(extractUrl, SEARCH_CONFIG.timeoutMs);
+    const ed = await er.json();
+    const pages = ed?.query?.pages || {};
+    const page = Object.values(pages)[0];
+    if (!page?.extract) return [];
+
+    return [{
+        title:   escapeForPrompt(page.title),
+        snippet: escapeForPrompt(page.extract.slice(0, SEARCH_CONFIG.maxSnippetLen * 2)),
+        url:     `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, "_"))}`
+    }];
+}
+
 const _PROVIDERS = [
-    { name: "DuckDuckGo",  fn: searchDDG },
-    { name: "Wikipedia",   fn: searchWikipedia },
-    { name: "Brave",       fn: searchBrave },
+    { name: "DuckDuckGo",       fn: searchDDG },
+    { name: "Wikipedia",        fn: searchWikipedia },
+    { name: "WikipediaExtract", fn: searchWikipediaExtract },
+    { name: "Brave",            fn: searchBrave },
 ];
 
 // Track per-session usage to cycle providers
@@ -263,7 +289,13 @@ function buildContextBlock(enriched, successCount) {
     const lines = [
         "CURRENT WEB CONTEXT (fetched live — treat as primary evidence):",
         `Retrieved ${successCount} search result set(s) from: ${[...new Set(enriched.map(e => e.provider))].join(", ")}.`,
-        "Use this information to ground your analysis in current facts. If search results contradict your training data, defer to the search results.",
+        "CRITICAL INSTRUCTIONS FOR USING THIS CONTEXT:",
+        "1. Treat search results as more current and authoritative than your training data.",
+        "2. If search results contradict your training data, defer to the search results.",
+        "3. Extract SPECIFIC facts, figures, dates, names, and numbers — do not give vague summaries.",
+        "4. If results reference dollar amounts, casualty figures, dates of events, or named operations, include them explicitly.",
+        "5. Do NOT say 'based on current web context' without providing the actual specific data from that context.",
+        "6. A shallow answer when detailed data is available is a failure of your mandate.",
         ""
     ];
 
